@@ -34,7 +34,9 @@ import (
 	"time"
 
 	"github.com/gravitational/teleport"
+	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib"
+	"github.com/gravitational/teleport/lib/auth"
 	"github.com/gravitational/teleport/lib/auth/testauthority"
 	"github.com/gravitational/teleport/lib/defaults"
 	"github.com/gravitational/teleport/lib/events"
@@ -227,8 +229,8 @@ func (s *KubeSuite) TestKubeExec(c *check.C) {
 		kubeUsers:  kubeUsers,
 		kubeGroups: kubeGroups,
 		impersonation: &rest.ImpersonationConfig{
-			UserName: role.GetKubeUsers(services.Allow)[0],
-			Groups:   role.GetKubeGroups(services.Allow),
+			UserName: role.GetKubeUsers(types.Allow)[0],
+			Groups:   role.GetKubeGroups(types.Allow),
 		},
 	})
 	c.Assert(err, check.IsNil)
@@ -565,7 +567,7 @@ func (s *KubeSuite) TestKubeTrustedClustersClientCert(c *check.C) {
 	c.Assert(err, check.IsNil)
 	trustedClusterToken := "trusted-clsuter-token"
 	err = main.Process.GetAuthServer().UpsertToken(
-		services.MustCreateProvisionToken(trustedClusterToken, []teleport.Role{teleport.RoleTrustedCluster}, time.Time{}))
+		auth.MustCreateProvisionToken(trustedClusterToken, []teleport.Role{teleport.RoleTrustedCluster}, time.Time{}))
 	c.Assert(err, check.IsNil)
 	trustedCluster := main.Secrets.AsTrustedCluster(trustedClusterToken, services.RoleMap{
 		{Remote: mainRole.GetName(), Local: []string{auxRole.GetName()}},
@@ -830,7 +832,7 @@ func (s *KubeSuite) TestKubeTrustedClustersSNI(c *check.C) {
 	c.Assert(err, check.IsNil)
 	trustedClusterToken := "trusted-cluster-token"
 	err = main.Process.GetAuthServer().UpsertToken(
-		services.MustCreateProvisionToken(trustedClusterToken, []teleport.Role{teleport.RoleTrustedCluster}, time.Time{}))
+		auth.MustCreateProvisionToken(trustedClusterToken, []teleport.Role{teleport.RoleTrustedCluster}, time.Time{}))
 	c.Assert(err, check.IsNil)
 	trustedCluster := main.Secrets.AsTrustedCluster(trustedClusterToken, services.RoleMap{
 		{Remote: mainRole.GetName(), Local: []string{auxRole.GetName()}},
@@ -1192,7 +1194,7 @@ func kubeProxyClient(cfg kubeProxyConfig) (*kubernetes.Clientset, *rest.Config, 
 	if err != nil {
 		return nil, nil, trace.Wrap(err)
 	}
-	roles, err := services.FetchRoles(user.GetRoles(), authServer, user.GetTraits())
+	roles, err := auth.FetchRoles(user.GetRoles(), authServer, user.GetTraits())
 	if err != nil {
 		return nil, nil, trace.Wrap(err)
 	}
