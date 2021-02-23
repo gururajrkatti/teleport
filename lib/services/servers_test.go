@@ -18,7 +18,6 @@ package services
 
 import (
 	"fmt"
-	"testing"
 	"time"
 
 	"github.com/gravitational/teleport/lib/defaults"
@@ -50,42 +49,42 @@ func (s *ServerSuite) TestServersCompare(c *check.C) {
 	}
 	node.SetExpiry(time.Date(2018, 1, 2, 3, 4, 5, 6, time.UTC))
 	// Server is equal to itself
-	c.Assert(compareServers(node, node), check.Equals, Equal)
+	c.Assert(CompareServers(node, node), check.Equals, Equal)
 
 	// Only timestamps are different
 	node2 := *node
 	node2.SetExpiry(time.Date(2018, 1, 2, 3, 4, 5, 8, time.UTC))
-	c.Assert(compareServers(node, &node2), check.Equals, OnlyTimestampsDifferent)
+	c.Assert(CompareServers(node, &node2), check.Equals, OnlyTimestampsDifferent)
 
 	// Labels are different
 	node2 = *node
 	node2.Metadata.Labels = map[string]string{"a": "d"}
-	c.Assert(compareServers(node, &node2), check.Equals, Different)
+	c.Assert(CompareServers(node, &node2), check.Equals, Different)
 
 	// Command labels are different
 	node2 = *node
 	node2.Spec.CmdLabels = map[string]CommandLabelV2{"a": {Period: Duration(time.Minute), Command: []string{"ls", "-lR"}}}
-	c.Assert(compareServers(node, &node2), check.Equals, Different)
+	c.Assert(CompareServers(node, &node2), check.Equals, Different)
 
 	// Address has changed
 	node2 = *node
 	node2.Spec.Addr = "localhost:3033"
-	c.Assert(compareServers(node, &node2), check.Equals, Different)
+	c.Assert(CompareServers(node, &node2), check.Equals, Different)
 
 	// Public addr has changed
 	node2 = *node
 	node2.Spec.PublicAddr = "localhost:3033"
-	c.Assert(compareServers(node, &node2), check.Equals, Different)
+	c.Assert(CompareServers(node, &node2), check.Equals, Different)
 
 	// Hostname has changed
 	node2 = *node
 	node2.Spec.Hostname = "luna2"
-	c.Assert(compareServers(node, &node2), check.Equals, Different)
+	c.Assert(CompareServers(node, &node2), check.Equals, Different)
 
 	// TeleportVersion has changed
 	node2 = *node
 	node2.Spec.Version = "5.0.0"
-	c.Assert(compareServers(node, &node2), check.Equals, Different)
+	c.Assert(CompareServers(node, &node2), check.Equals, Different)
 
 	// Rotation has changed
 	node2 = *node
@@ -102,7 +101,7 @@ func (s *ServerSuite) TestServersCompare(c *check.C) {
 			Standby:       time.Date(2018, 3, 4, 5, 6, 13, 8, time.UTC),
 		},
 	}
-	c.Assert(compareServers(node, &node2), check.Equals, Different)
+	c.Assert(CompareServers(node, &node2), check.Equals, Different)
 }
 
 // TestGuessProxyHostAndVersion checks that the GuessProxyHostAndVersion

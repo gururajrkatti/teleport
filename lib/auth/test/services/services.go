@@ -159,7 +159,7 @@ func NewAuthServer(cfg AuthServerConfig) (*AuthServer, error) {
 	access := local.NewAccessService(srv.Backend)
 	identity := local.NewIdentityService(srv.Backend)
 
-	clusterName, err := types.NewClusterName(types.ClusterNameSpecV2{
+	clusterName, err := services.NewClusterName(services.ClusterNameSpecV2{
 		ClusterName: cfg.ClusterName,
 	})
 	if err != nil {
@@ -183,36 +183,36 @@ func NewAuthServer(cfg AuthServerConfig) (*AuthServer, error) {
 		return nil, trace.Wrap(err)
 	}
 
-	err = srv.AuthServer.Services.SetClusterConfig(auth.DefaultClusterConfig())
+	err = srv.AuthServer.SetClusterConfig(auth.DefaultClusterConfig())
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
 
 	// set cluster name in the backend
-	err = srv.AuthServer.Services.SetClusterName(clusterName)
+	err = srv.AuthServer.SetClusterName(clusterName)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	authPreference, err := types.NewAuthPreference(types.AuthPreferenceSpecV2{
+	authPreference, err := services.NewAuthPreference(services.AuthPreferenceSpecV2{
 		Type:         teleport.Local,
 		SecondFactor: constants.SecondFactorOff,
 	})
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	err = srv.AuthServer.Services.SetAuthPreference(authPreference)
+	err = srv.AuthServer.SetAuthPreference(authPreference)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
 
 	// set static tokens
-	staticTokens, err := types.NewStaticTokens(types.StaticTokensSpecV2{
-		StaticTokens: []types.ProvisionTokenV1{},
+	staticTokens, err := services.NewStaticTokens(services.StaticTokensSpecV2{
+		StaticTokens: []services.ProvisionTokenV1{},
 	})
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	err = srv.AuthServer.Services.SetStaticTokens(staticTokens)
+	err = srv.AuthServer.SetStaticTokens(staticTokens)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -220,35 +220,35 @@ func NewAuthServer(cfg AuthServerConfig) (*AuthServer, error) {
 	ctx := context.Background()
 
 	// create the default role
-	err = srv.AuthServer.Services.UpsertRole(ctx, auth.NewAdminRole())
+	err = srv.AuthServer.UpsertRole(ctx, auth.NewAdminRole())
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
 
 	// Setup certificate and signing authorities.
-	if err = srv.AuthServer.Services.Trust.UpsertCertAuthority(test.NewCAWithConfig(test.CAConfig{
-		Type:        types.HostCA,
+	if err = srv.AuthServer.UpsertCertAuthority(test.NewCAWithConfig(test.CAConfig{
+		Type:        services.HostCA,
 		ClusterName: srv.ClusterName,
 		Clock:       cfg.Clock,
 	})); err != nil {
 		return nil, trace.Wrap(err)
 	}
-	if err = srv.AuthServer.Services.Trust.UpsertCertAuthority(test.NewCAWithConfig(test.CAConfig{
-		Type:        types.UserCA,
+	if err = srv.AuthServer.UpsertCertAuthority(test.NewCAWithConfig(test.CAConfig{
+		Type:        services.UserCA,
 		ClusterName: srv.ClusterName,
 		Clock:       cfg.Clock,
 	})); err != nil {
 		return nil, trace.Wrap(err)
 	}
-	if err = srv.AuthServer.Services.Trust.UpsertCertAuthority(test.NewCAWithConfig(test.CAConfig{
-		Type:        types.JWTSigner,
+	if err = srv.AuthServer.UpsertCertAuthority(test.NewCAWithConfig(test.CAConfig{
+		Type:        services.JWTSigner,
 		ClusterName: srv.ClusterName,
 		Clock:       cfg.Clock,
 	})); err != nil {
 		return nil, trace.Wrap(err)
 	}
 
-	srv.Authorizer, err = server.NewAuthorizer(srv.AuthServer.Services.Access, srv.AuthServer.Services.Identity, srv.AuthServer.Services.Trust)
+	srv.Authorizer, err = server.NewAuthorizer(srv.AuthServer.Access, srv.AuthServer.Identity, srv.AuthServer.Trust)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -413,26 +413,26 @@ func (a *AuthServer) Clock() clockwork.Clock {
 
 // Trust adds other server host certificate authority as trusted
 func (a *AuthServer) Trust(remote *AuthServer, roleMap services.RoleMap) error {
-	remoteCA, err := remote.AuthServer.GetCertAuthority(types.CertAuthID{
-		Type:       types.HostCA,
+	remoteCA, err := remote.AuthServer.GetCertAuthority(services.CertAuthID{
+		Type:       services.HostCA,
 		DomainName: remote.ClusterName,
 	}, false)
 	if err != nil {
 		return trace.Wrap(err)
 	}
-	err = a.AuthServer.Services.Trust.UpsertCertAuthority(remoteCA)
+	err = a.AuthServer.UpsertCertAuthority(remoteCA)
 	if err != nil {
 		return trace.Wrap(err)
 	}
-	remoteCA, err = remote.AuthServer.GetCertAuthority(types.CertAuthID{
-		Type:       types.UserCA,
+	remoteCA, err = remote.AuthServer.GetCertAuthority(services.CertAuthID{
+		Type:       services.UserCA,
 		DomainName: remote.ClusterName,
 	}, false)
 	if err != nil {
 		return trace.Wrap(err)
 	}
 	remoteCA.SetRoleMap(roleMap)
-	err = a.AuthServer.Services.Trust.UpsertCertAuthority(remoteCA)
+	err = a.AuthServer.UpsertCertAuthority(remoteCA)
 	if err != nil {
 		return trace.Wrap(err)
 	}

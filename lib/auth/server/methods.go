@@ -27,6 +27,7 @@ import (
 	"github.com/gravitational/teleport/lib/auth"
 	"github.com/gravitational/teleport/lib/auth/u2f"
 	"github.com/gravitational/teleport/lib/events"
+	"github.com/gravitational/teleport/lib/services"
 	"github.com/gravitational/teleport/lib/utils"
 
 	"github.com/gravitational/trace"
@@ -115,7 +116,7 @@ func (s *Server) authenticateUser(ctx context.Context, req AuthenticateUserReque
 		return trace.Wrap(err)
 	}
 
-	authPreference, err := s.Services.GetAuthPreference()
+	authPreference, err := s.GetAuthPreference()
 	if err != nil {
 		return trace.Wrap(err)
 	}
@@ -188,7 +189,7 @@ func (s *Server) authenticateUser(ctx context.Context, req AuthenticateUserReque
 // AuthenticateWebUser authenticates web user, creates and returns a web session
 // if authentication is successful. In case the existing session ID is used to authenticate,
 // returns the existing session instead of creating a new one
-func (s *Server) AuthenticateWebUser(req AuthenticateUserRequest) (types.WebSession, error) {
+func (s *Server) AuthenticateWebUser(req AuthenticateUserRequest) (services.WebSession, error) {
 	clusterConfig, err := s.GetClusterConfig()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -204,7 +205,7 @@ func (s *Server) AuthenticateWebUser(req AuthenticateUserRequest) (types.WebSess
 	}
 
 	if req.Session != nil {
-		session, err := s.Services.GetWebSession(context.TODO(), types.GetWebSessionRequest{
+		session, err := s.GetWebSession(context.TODO(), types.GetWebSessionRequest{
 			User:      req.Username,
 			SessionID: req.Session.ID,
 		})
@@ -305,7 +306,7 @@ func (c *TrustedCerts) SSHCertPublicKeys() ([]ssh.PublicKey, error) {
 }
 
 // AuthoritiesToTrustedCerts serializes authorities to TrustedCerts data structure
-func AuthoritiesToTrustedCerts(authorities []types.CertAuthority) []TrustedCerts {
+func AuthoritiesToTrustedCerts(authorities []services.CertAuthority) []TrustedCerts {
 	out := make([]TrustedCerts, len(authorities))
 	for i, ca := range authorities {
 		out[i] = TrustedCerts{
@@ -338,7 +339,7 @@ func (s *Server) AuthenticateSSHUser(req AuthenticateSSHRequest) (*SSHLoginRespo
 		return nil, trace.Wrap(err)
 	}
 
-	// It's safe to extract the roles and traits directly from types.User as
+	// It's safe to extract the roles and traits directly from services.User as
 	// this endpoint is only used for local accounts.
 	user, err := s.GetUser(req.Username, false)
 	if err != nil {
@@ -350,14 +351,14 @@ func (s *Server) AuthenticateSSHUser(req AuthenticateSSHRequest) (*SSHLoginRespo
 	}
 
 	// Return the host CA for this cluster only.
-	authority, err := s.GetCertAuthority(types.CertAuthID{
-		Type:       types.HostCA,
+	authority, err := s.GetCertAuthority(services.CertAuthID{
+		Type:       services.HostCA,
 		DomainName: clusterName.GetClusterName(),
 	}, false)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	hostCertAuthorities := []types.CertAuthority{
+	hostCertAuthorities := []services.CertAuthority{
 		authority,
 	}
 
@@ -401,8 +402,8 @@ func (s *Server) emitNoLocalAuthEvent(username string) {
 	}
 }
 
-func (s *Server) createUserWebSession(ctx context.Context, user types.User) (types.WebSession, error) {
-	// It's safe to extract the roles and traits directly from types.User as this method
+func (s *Server) createUserWebSession(ctx context.Context, user services.User) (services.WebSession, error) {
+	// It's safe to extract the roles and traits directly from services.User as this method
 	// is only used for local accounts.
 	return s.createWebSession(ctx, types.NewWebSessionRequest{
 		User:   user.GetName(),

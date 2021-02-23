@@ -526,11 +526,11 @@ func (s *APIServer) withAuth(handler HandlerWithAuthFunc) httprouter.Handle {
 
 			return nil, trace.AccessDenied(accessDeniedMsg + "[00]")
 		}
-		auth := &WithRoles{
+		auth := &ServerWithRoles{
 			authServer: s.AuthServer,
 			context:    *authContext,
 			sessions:   s.SessionService,
-			alog:       s.AuthServer.Services.IAuditLog,
+			alog:       s.AuthServer.IAuditLog,
 		}
 		version := p.ByName("version")
 		if version == "" {
@@ -581,11 +581,11 @@ func (s *APIServer) upsertServer(auth libauth.Presence, role teleport.Role, r *h
 	var kind string
 	switch role {
 	case teleport.RoleNode:
-		kind = types.KindNode
+		kind = services.KindNode
 	case teleport.RoleAuth:
-		kind = types.KindAuthServer
+		kind = services.KindAuthServer
 	case teleport.RoleProxy:
-		kind = types.KindProxy
+		kind = services.KindProxy
 	default:
 		return nil, trace.BadParameter("upsertServer with unknown role: %q", role)
 	}
@@ -602,7 +602,7 @@ func (s *APIServer) upsertServer(auth libauth.Presence, role teleport.Role, r *h
 	switch role {
 	case teleport.RoleNode:
 		namespace := p.ByName("namespace")
-		if !types.IsValidNamespace(namespace) {
+		if !services.IsValidNamespace(namespace) {
 			return nil, trace.BadParameter("invalid namespace %q", namespace)
 		}
 		server.SetNamespace(namespace)
@@ -627,7 +627,7 @@ func (s *APIServer) upsertServer(auth libauth.Presence, role teleport.Role, r *h
 
 // keepAliveNode updates node TTL in the backend
 func (s *APIServer) keepAliveNode(auth apiServerAuth, w http.ResponseWriter, r *http.Request, p httprouter.Params, version string) (interface{}, error) {
-	var handle types.KeepAlive
+	var handle services.KeepAlive
 	if err := httplib.ReadJSON(r, &handle); err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -648,7 +648,7 @@ func (s *APIServer) upsertNodes(auth apiServerAuth, w http.ResponseWriter, r *ht
 	if err := httplib.ReadJSON(r, &req); err != nil {
 		return nil, trace.Wrap(err)
 	}
-	if !types.IsValidNamespace(req.Namespace) {
+	if !services.IsValidNamespace(req.Namespace) {
 		return nil, trace.BadParameter("invalid namespace %q", req.Namespace)
 	}
 
@@ -673,7 +673,7 @@ func (s *APIServer) upsertNode(auth apiServerAuth, w http.ResponseWriter, r *htt
 // getNodes returns registered SSH nodes
 func (s *APIServer) getNodes(auth apiServerAuth, w http.ResponseWriter, r *http.Request, p httprouter.Params, version string) (interface{}, error) {
 	namespace := p.ByName("namespace")
-	if !types.IsValidNamespace(namespace) {
+	if !services.IsValidNamespace(namespace) {
 		return nil, trace.BadParameter("invalid namespace %q", namespace)
 	}
 	skipValidation, _, err := httplib.ParseBool(r.URL.Query(), "skip_validation")
@@ -695,7 +695,7 @@ func (s *APIServer) getNodes(auth apiServerAuth, w http.ResponseWriter, r *http.
 // deleteAllNodes deletes all nodes
 func (s *APIServer) deleteAllNodes(auth apiServerAuth, w http.ResponseWriter, r *http.Request, p httprouter.Params, version string) (interface{}, error) {
 	namespace := p.ByName("namespace")
-	if !types.IsValidNamespace(namespace) {
+	if !services.IsValidNamespace(namespace) {
 		return nil, trace.BadParameter("invalid namespace %q", namespace)
 	}
 	err := auth.DeleteAllNodes(namespace)
@@ -708,7 +708,7 @@ func (s *APIServer) deleteAllNodes(auth apiServerAuth, w http.ResponseWriter, r 
 // deleteNode deletes node
 func (s *APIServer) deleteNode(auth apiServerAuth, w http.ResponseWriter, r *http.Request, p httprouter.Params, version string) (interface{}, error) {
 	namespace := p.ByName("namespace")
-	if !types.IsValidNamespace(namespace) {
+	if !services.IsValidNamespace(namespace) {
 		return nil, trace.BadParameter("invalid namespace %q", namespace)
 	}
 	name := p.ByName("name")
@@ -772,7 +772,7 @@ func (s *APIServer) getAuthServers(auth apiServerAuth, w http.ResponseWriter, r 
 	return marshalServers(servers, version)
 }
 
-func marshalServers(servers []types.Server, version string) (interface{}, error) {
+func marshalServers(servers []services.Server, version string) (interface{}, error) {
 	items := make([]json.RawMessage, len(servers))
 	for i, server := range servers {
 		data, err := resource.MarshalServer(server, resource.WithVersion(version), resource.PreserveResourceID())
@@ -1330,7 +1330,7 @@ func (s *APIServer) getCertAuthorities(auth apiServerAuth, w http.ResponseWriter
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	certs, err := auth.GetCertAuthorities(types.CertAuthType(p.ByName("type")), loadKeys)
+	certs, err := auth.GetCertAuthorities(services.CertAuthType(p.ByName("type")), loadKeys)
 
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -1351,8 +1351,8 @@ func (s *APIServer) getCertAuthority(auth apiServerAuth, w http.ResponseWriter, 
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	id := types.CertAuthID{
-		Type:       types.CertAuthType(p.ByName("type")),
+	id := services.CertAuthID{
+		Type:       services.CertAuthType(p.ByName("type")),
 		DomainName: p.ByName("domain"),
 	}
 	ca, err := auth.GetCertAuthority(id, loadKeys)
@@ -1412,9 +1412,9 @@ func (s *APIServer) getU2FAppID(auth apiServerAuth, w http.ResponseWriter, r *ht
 }
 
 func (s *APIServer) deleteCertAuthority(auth apiServerAuth, w http.ResponseWriter, r *http.Request, p httprouter.Params, version string) (interface{}, error) {
-	id := types.CertAuthID{
+	id := services.CertAuthID{
 		DomainName: p.ByName("domain"),
-		Type:       types.CertAuthType(p.ByName("type")),
+		Type:       services.CertAuthType(p.ByName("type")),
 	}
 	if err := auth.DeleteCertAuthority(id); err != nil {
 		return nil, trace.Wrap(err)
@@ -1432,7 +1432,7 @@ func (s *APIServer) createSession(auth apiServerAuth, w http.ResponseWriter, r *
 		return nil, trace.Wrap(err)
 	}
 	namespace := p.ByName("namespace")
-	if !types.IsValidNamespace(namespace) {
+	if !services.IsValidNamespace(namespace) {
 		return nil, trace.BadParameter("invalid namespace %q", namespace)
 	}
 	req.Session.Namespace = namespace
@@ -1452,7 +1452,7 @@ func (s *APIServer) updateSession(auth apiServerAuth, w http.ResponseWriter, r *
 		return nil, trace.Wrap(err)
 	}
 	namespace := p.ByName("namespace")
-	if !types.IsValidNamespace(namespace) {
+	if !services.IsValidNamespace(namespace) {
 		return nil, trace.BadParameter("invalid namespace %q", namespace)
 	}
 	req.Update.Namespace = namespace
@@ -1472,7 +1472,7 @@ func (s *APIServer) deleteSession(auth apiServerAuth, w http.ResponseWriter, r *
 
 func (s *APIServer) getSessions(auth apiServerAuth, w http.ResponseWriter, r *http.Request, p httprouter.Params, version string) (interface{}, error) {
 	namespace := p.ByName("namespace")
-	if !types.IsValidNamespace(namespace) {
+	if !services.IsValidNamespace(namespace) {
 		return nil, trace.BadParameter("invalid namespace %q", namespace)
 	}
 	sessions, err := auth.GetSessions(namespace)
@@ -1488,7 +1488,7 @@ func (s *APIServer) getSession(auth apiServerAuth, w http.ResponseWriter, r *htt
 		return nil, trace.Wrap(err)
 	}
 	namespace := p.ByName("namespace")
-	if !types.IsValidNamespace(namespace) {
+	if !services.IsValidNamespace(namespace) {
 		return nil, trace.BadParameter("invalid namespace %q", namespace)
 	}
 	se, err := auth.GetSession(namespace, *sid)
@@ -1600,7 +1600,7 @@ type OIDCAuthRawResponse struct {
 	// Username is authenticated teleport username
 	Username string `json:"username"`
 	// Identity contains validated OIDC identity
-	Identity types.ExternalIdentity `json:"identity"`
+	Identity services.ExternalIdentity `json:"identity"`
 	// Web session will be generated by auth server if requested in OIDCAuthRequest
 	Session json.RawMessage `json:"session,omitempty"`
 	// Cert will be generated by certificate authority
@@ -1955,7 +1955,7 @@ type GithubAuthRawResponse struct {
 	// Username is authenticated teleport username
 	Username string `json:"username"`
 	// Identity contains validated OIDC identity
-	Identity types.ExternalIdentity `json:"identity"`
+	Identity services.ExternalIdentity `json:"identity"`
 	// Web session will be generated by auth server if requested in OIDCAuthRequest
 	Session json.RawMessage `json:"session,omitempty"`
 	// Cert will be generated by certificate authority
@@ -2200,7 +2200,7 @@ func (s *APIServer) uploadSessionRecording(auth apiServerAuth, w http.ResponseWr
 	if r.MultipartForm != nil {
 		defer r.MultipartForm.RemoveAll()
 	}
-	if !types.IsValidNamespace(namespace) {
+	if !services.IsValidNamespace(namespace) {
 		return nil, trace.BadParameter("invalid namespace %q", namespace)
 	}
 	if len(files) != 1 {
@@ -2252,7 +2252,7 @@ func (s *APIServer) getSessionChunk(auth apiServerAuth, w http.ResponseWriter, r
 		return nil, trace.BadParameter("missing parameter id")
 	}
 	namespace := p.ByName("namespace")
-	if !types.IsValidNamespace(namespace) {
+	if !services.IsValidNamespace(namespace) {
 		return nil, trace.BadParameter("invalid namespace %q", namespace)
 	}
 
@@ -2289,7 +2289,7 @@ func (s *APIServer) getSessionEvents(auth apiServerAuth, w http.ResponseWriter, 
 		return nil, trace.Wrap(err)
 	}
 	namespace := p.ByName("namespace")
-	if !types.IsValidNamespace(namespace) {
+	if !services.IsValidNamespace(namespace) {
 		return nil, trace.BadParameter("invalid namespace %q", namespace)
 	}
 	afterN, err := strconv.Atoi(r.URL.Query().Get("after"))
@@ -2329,7 +2329,7 @@ func (s *APIServer) getNamespaces(auth apiServerAuth, w http.ResponseWriter, r *
 
 func (s *APIServer) getNamespace(auth apiServerAuth, w http.ResponseWriter, r *http.Request, p httprouter.Params, version string) (interface{}, error) {
 	name := p.ByName("namespace")
-	if !types.IsValidNamespace(name) {
+	if !services.IsValidNamespace(name) {
 		return nil, trace.BadParameter("invalid namespace %q", name)
 	}
 
@@ -2342,7 +2342,7 @@ func (s *APIServer) getNamespace(auth apiServerAuth, w http.ResponseWriter, r *h
 
 func (s *APIServer) deleteNamespace(auth apiServerAuth, w http.ResponseWriter, r *http.Request, p httprouter.Params, version string) (interface{}, error) {
 	name := p.ByName("namespace")
-	if !types.IsValidNamespace(name) {
+	if !services.IsValidNamespace(name) {
 		return nil, trace.BadParameter("invalid namespace %q", name)
 	}
 

@@ -24,7 +24,6 @@ import (
 	"sort"
 	"sync"
 	"sync/atomic"
-	"testing"
 	"time"
 
 	"github.com/gravitational/teleport"
@@ -38,7 +37,6 @@ import (
 	"github.com/gravitational/teleport/lib/backend/lite"
 	"github.com/gravitational/teleport/lib/defaults"
 	"github.com/gravitational/teleport/lib/fixtures"
-	"github.com/gravitational/teleport/lib/utils"
 	"github.com/pborman/uuid"
 
 	"github.com/gravitational/trace"
@@ -63,10 +61,6 @@ type ServicesTestSuite struct {
 }
 
 var _ = check.Suite(&ServicesTestSuite{})
-
-func (s *ServicesTestSuite) SetUpSuite(c *check.C) {
-	utils.InitLoggerForTests(testing.Verbose())
-}
 
 func (s *ServicesTestSuite) SetUpTest(c *check.C) {
 	var err error

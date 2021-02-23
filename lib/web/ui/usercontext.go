@@ -17,7 +17,6 @@ limitations under the License.
 package ui
 
 import (
-	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib/auth"
 	"github.com/gravitational/teleport/lib/defaults"
 	"github.com/gravitational/teleport/lib/services"
@@ -93,8 +92,8 @@ func getLogins(roleSet auth.RoleSet) []string {
 	allowed := []string{}
 	denied := []string{}
 	for _, role := range roleSet {
-		denied = append(denied, role.GetLogins(types.Deny)...)
-		allowed = append(allowed, role.GetLogins(types.Allow)...)
+		denied = append(denied, role.GetLogins(services.Deny)...)
+		allowed = append(allowed, role.GetLogins(services.Allow)...)
 	}
 
 	allowed = utils.Deduplicate(allowed)
@@ -125,11 +124,11 @@ func hasAccess(roleSet auth.RoleSet, ctx *auth.Context, kind string, verbs ...st
 
 func newAccess(roleSet auth.RoleSet, ctx *auth.Context, kind string) access {
 	return access{
-		List:   hasAccess(roleSet, ctx, kind, types.VerbList),
-		Read:   hasAccess(roleSet, ctx, kind, types.VerbRead),
-		Edit:   hasAccess(roleSet, ctx, kind, types.VerbUpdate),
-		Create: hasAccess(roleSet, ctx, kind, types.VerbCreate),
-		Delete: hasAccess(roleSet, ctx, kind, types.VerbDelete),
+		List:   hasAccess(roleSet, ctx, kind, services.VerbList),
+		Read:   hasAccess(roleSet, ctx, kind, services.VerbRead),
+		Edit:   hasAccess(roleSet, ctx, kind, services.VerbUpdate),
+		Create: hasAccess(roleSet, ctx, kind, services.VerbCreate),
+		Delete: hasAccess(roleSet, ctx, kind, services.VerbDelete),
 	}
 }
 

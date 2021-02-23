@@ -69,7 +69,7 @@ func (s *IdentityService) DeleteAllUsers() error {
 }
 
 // GetUsers returns a list of users registered with the local auth server
-func (s *IdentityService) GetUsers(withSecrets bool) ([]types.User, error) {
+func (s *IdentityService) GetUsers(withSecrets bool) ([]services.User, error) {
 	if withSecrets {
 		return s.getUsersWithSecrets()
 	}
@@ -78,7 +78,7 @@ func (s *IdentityService) GetUsers(withSecrets bool) ([]types.User, error) {
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	var out []types.User
+	var out []services.User
 	for _, item := range result.Items {
 		if !bytes.HasSuffix(item.Key, []byte(paramsPrefix)) {
 			continue
@@ -96,7 +96,7 @@ func (s *IdentityService) GetUsers(withSecrets bool) ([]types.User, error) {
 	return out, nil
 }
 
-func (s *IdentityService) getUsersWithSecrets() ([]types.User, error) {
+func (s *IdentityService) getUsersWithSecrets() ([]services.User, error) {
 	startKey := backend.Key(webPrefix, usersPrefix)
 	result, err := s.GetRange(context.TODO(), startKey, backend.RangeEnd(startKey), backend.NoLimit)
 	if err != nil {
@@ -106,7 +106,7 @@ func (s *IdentityService) getUsersWithSecrets() ([]types.User, error) {
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	users := make([]types.User, 0, len(collected))
+	users := make([]services.User, 0, len(collected))
 	for uname, uitems := range collected {
 		user, err := userFromUserItems(uname, uitems)
 		if err != nil {
@@ -118,7 +118,7 @@ func (s *IdentityService) getUsersWithSecrets() ([]types.User, error) {
 }
 
 // CreateUser creates user if it does not exist.
-func (s *IdentityService) CreateUser(user types.User) error {
+func (s *IdentityService) CreateUser(user services.User) error {
 	if err := auth.ValidateUser(user); err != nil {
 		return trace.Wrap(err)
 	}
@@ -132,7 +132,7 @@ func (s *IdentityService) CreateUser(user types.User) error {
 		return trace.AlreadyExists("user %q already registered", user.GetName())
 	}
 
-	value, err := resource.MarshalUser(user.WithoutSecrets().(types.User))
+	value, err := resource.MarshalUser(user.WithoutSecrets().(services.User))
 	if err != nil {
 		return trace.Wrap(err)
 	}
@@ -156,7 +156,7 @@ func (s *IdentityService) CreateUser(user types.User) error {
 }
 
 // UpdateUser updates an existing user.
-func (s *IdentityService) UpdateUser(ctx context.Context, user types.User) error {
+func (s *IdentityService) UpdateUser(ctx context.Context, user services.User) error {
 	if err := auth.ValidateUser(user); err != nil {
 		return trace.Wrap(err)
 	}
@@ -166,7 +166,7 @@ func (s *IdentityService) UpdateUser(ctx context.Context, user types.User) error
 		return trace.Wrap(err)
 	}
 
-	value, err := resource.MarshalUser(user.WithoutSecrets().(types.User))
+	value, err := resource.MarshalUser(user.WithoutSecrets().(services.User))
 	if err != nil {
 		return trace.Wrap(err)
 	}
@@ -189,11 +189,11 @@ func (s *IdentityService) UpdateUser(ctx context.Context, user types.User) error
 }
 
 // UpsertUser updates parameters about user, or creates an entry if not exist.
-func (s *IdentityService) UpsertUser(user types.User) error {
+func (s *IdentityService) UpsertUser(user services.User) error {
 	if err := auth.ValidateUser(user); err != nil {
 		return trace.Wrap(err)
 	}
-	value, err := resource.MarshalUser(user.WithoutSecrets().(types.User))
+	value, err := resource.MarshalUser(user.WithoutSecrets().(services.User))
 	if err != nil {
 		return trace.Wrap(err)
 	}
@@ -216,7 +216,7 @@ func (s *IdentityService) UpsertUser(user types.User) error {
 }
 
 // GetUser returns a user by name
-func (s *IdentityService) GetUser(user string, withSecrets bool) (types.User, error) {
+func (s *IdentityService) GetUser(user string, withSecrets bool) (services.User, error) {
 	if withSecrets {
 		return s.getUserWithSecrets(user)
 	}
@@ -238,7 +238,7 @@ func (s *IdentityService) GetUser(user string, withSecrets bool) (types.User, er
 	return u, nil
 }
 
-func (s *IdentityService) getUserWithSecrets(user string) (types.User, error) {
+func (s *IdentityService) getUserWithSecrets(user string) (services.User, error) {
 	if user == "" {
 		return nil, trace.BadParameter("missing user name")
 	}
@@ -259,7 +259,7 @@ func (s *IdentityService) getUserWithSecrets(user string) (types.User, error) {
 	return u, nil
 }
 
-func (s *IdentityService) upsertLocalAuthSecrets(user string, auth types.LocalAuthSecrets) error {
+func (s *IdentityService) upsertLocalAuthSecrets(user string, auth services.LocalAuthSecrets) error {
 	if len(auth.PasswordHash) > 0 {
 		err := s.UpsertPasswordHash(user, auth.PasswordHash)
 		if err != nil {
@@ -276,7 +276,7 @@ func (s *IdentityService) upsertLocalAuthSecrets(user string, auth types.LocalAu
 
 // GetUserByOIDCIdentity returns a user by it's specified OIDC Identity, returns first
 // user specified with this identity
-func (s *IdentityService) GetUserByOIDCIdentity(id types.ExternalIdentity) (types.User, error) {
+func (s *IdentityService) GetUserByOIDCIdentity(id services.ExternalIdentity) (services.User, error) {
 	users, err := s.GetUsers(false)
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -293,7 +293,7 @@ func (s *IdentityService) GetUserByOIDCIdentity(id types.ExternalIdentity) (type
 
 // GetUserBySAMLCIdentity returns a user by it's specified OIDC Identity, returns first
 // user specified with this identity
-func (s *IdentityService) GetUserBySAMLIdentity(id types.ExternalIdentity) (types.User, error) {
+func (s *IdentityService) GetUserBySAMLIdentity(id services.ExternalIdentity) (services.User, error) {
 	users, err := s.GetUsers(false)
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -309,7 +309,7 @@ func (s *IdentityService) GetUserBySAMLIdentity(id types.ExternalIdentity) (type
 }
 
 // GetUserByGithubIdentity returns the first found user with specified Github identity
-func (s *IdentityService) GetUserByGithubIdentity(id types.ExternalIdentity) (types.User, error) {
+func (s *IdentityService) GetUserByGithubIdentity(id services.ExternalIdentity) (services.User, error) {
 	users, err := s.GetUsers(false)
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -678,7 +678,7 @@ func (s *IdentityService) GetU2FSignChallenge(user, deviceID string) (*u2f.Chall
 }
 
 // UpsertOIDCConnector upserts OIDC Connector
-func (s *IdentityService) UpsertOIDCConnector(connector types.OIDCConnector) error {
+func (s *IdentityService) UpsertOIDCConnector(connector services.OIDCConnector) error {
 	if err := connector.Check(); err != nil {
 		return trace.Wrap(err)
 	}
@@ -710,7 +710,7 @@ func (s *IdentityService) DeleteOIDCConnector(name string) error {
 
 // GetOIDCConnector returns OIDC connector data, parameter 'withSecrets'
 // includes or excludes client secret from return results
-func (s *IdentityService) GetOIDCConnector(name string, withSecrets bool) (types.OIDCConnector, error) {
+func (s *IdentityService) GetOIDCConnector(name string, withSecrets bool) (services.OIDCConnector, error) {
 	if name == "" {
 		return nil, trace.BadParameter("missing parameter name")
 	}
@@ -733,13 +733,13 @@ func (s *IdentityService) GetOIDCConnector(name string, withSecrets bool) (types
 }
 
 // GetOIDCConnectors returns registered connectors, withSecrets adds or removes client secret from return results
-func (s *IdentityService) GetOIDCConnectors(withSecrets bool) ([]types.OIDCConnector, error) {
+func (s *IdentityService) GetOIDCConnectors(withSecrets bool) ([]services.OIDCConnector, error) {
 	startKey := backend.Key(webPrefix, connectorsPrefix, oidcPrefix, connectorsPrefix)
 	result, err := s.GetRange(context.TODO(), startKey, backend.RangeEnd(startKey), backend.NoLimit)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	connectors := make([]types.OIDCConnector, len(result.Items))
+	connectors := make([]services.OIDCConnector, len(result.Items))
 	for i, item := range result.Items {
 		conn, err := resource.UnmarshalOIDCConnector(
 			item.Value, resource.WithExpires(item.Expires))
@@ -792,7 +792,7 @@ func (s *IdentityService) GetOIDCAuthRequest(stateToken string) (*auth.OIDCAuthR
 }
 
 // CreateSAMLConnector creates SAML Connector
-func (s *IdentityService) CreateSAMLConnector(connector types.SAMLConnector) error {
+func (s *IdentityService) CreateSAMLConnector(connector services.SAMLConnector) error {
 	if err := auth.ValidateSAMLConnector(connector); err != nil {
 		return trace.Wrap(err)
 	}
@@ -813,7 +813,7 @@ func (s *IdentityService) CreateSAMLConnector(connector types.SAMLConnector) err
 }
 
 // UpsertSAMLConnector upserts SAML Connector
-func (s *IdentityService) UpsertSAMLConnector(connector types.SAMLConnector) error {
+func (s *IdentityService) UpsertSAMLConnector(connector services.SAMLConnector) error {
 	if err := auth.ValidateSAMLConnector(connector); err != nil {
 		return trace.Wrap(err)
 	}
@@ -844,7 +844,7 @@ func (s *IdentityService) DeleteSAMLConnector(name string) error {
 
 // GetSAMLConnector returns SAML connector data,
 // withSecrets includes or excludes secrets from return results
-func (s *IdentityService) GetSAMLConnector(name string, withSecrets bool) (types.SAMLConnector, error) {
+func (s *IdentityService) GetSAMLConnector(name string, withSecrets bool) (services.SAMLConnector, error) {
 	if name == "" {
 		return nil, trace.BadParameter("missing parameter name")
 	}
@@ -872,13 +872,13 @@ func (s *IdentityService) GetSAMLConnector(name string, withSecrets bool) (types
 
 // GetSAMLConnectors returns registered connectors
 // withSecrets includes or excludes private key values from return results
-func (s *IdentityService) GetSAMLConnectors(withSecrets bool) ([]types.SAMLConnector, error) {
+func (s *IdentityService) GetSAMLConnectors(withSecrets bool) ([]services.SAMLConnector, error) {
 	startKey := backend.Key(webPrefix, connectorsPrefix, samlPrefix, connectorsPrefix)
 	result, err := s.GetRange(context.TODO(), startKey, backend.RangeEnd(startKey), backend.NoLimit)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	connectors := make([]types.SAMLConnector, len(result.Items))
+	connectors := make([]services.SAMLConnector, len(result.Items))
 	for i, item := range result.Items {
 		conn, err := resource.UnmarshalSAMLConnector(
 			item.Value, resource.WithExpires(item.Expires))
@@ -935,7 +935,7 @@ func (s *IdentityService) GetSAMLAuthRequest(id string) (*auth.SAMLAuthRequest, 
 }
 
 // CreateGithubConnector creates a new Github connector
-func (s *IdentityService) CreateGithubConnector(connector types.GithubConnector) error {
+func (s *IdentityService) CreateGithubConnector(connector services.GithubConnector) error {
 	if err := connector.CheckAndSetDefaults(); err != nil {
 		return trace.Wrap(err)
 	}
@@ -956,7 +956,7 @@ func (s *IdentityService) CreateGithubConnector(connector types.GithubConnector)
 }
 
 // UpsertGithubConnector creates or updates a Github connector
-func (s *IdentityService) UpsertGithubConnector(connector types.GithubConnector) error {
+func (s *IdentityService) UpsertGithubConnector(connector services.GithubConnector) error {
 	if err := connector.CheckAndSetDefaults(); err != nil {
 		return trace.Wrap(err)
 	}
@@ -978,13 +978,13 @@ func (s *IdentityService) UpsertGithubConnector(connector types.GithubConnector)
 }
 
 // GetGithubConnectors returns all configured Github connectors
-func (s *IdentityService) GetGithubConnectors(withSecrets bool) ([]types.GithubConnector, error) {
+func (s *IdentityService) GetGithubConnectors(withSecrets bool) ([]services.GithubConnector, error) {
 	startKey := backend.Key(webPrefix, connectorsPrefix, githubPrefix, connectorsPrefix)
 	result, err := s.GetRange(context.TODO(), startKey, backend.RangeEnd(startKey), backend.NoLimit)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	connectors := make([]types.GithubConnector, len(result.Items))
+	connectors := make([]services.GithubConnector, len(result.Items))
 	for i, item := range result.Items {
 		connector, err := resource.UnmarshalGithubConnector(item.Value)
 		if err != nil {
@@ -999,7 +999,7 @@ func (s *IdentityService) GetGithubConnectors(withSecrets bool) ([]types.GithubC
 }
 
 // GetGithubConnectot returns a particular Github connector
-func (s *IdentityService) GetGithubConnector(name string, withSecrets bool) (types.GithubConnector, error) {
+func (s *IdentityService) GetGithubConnector(name string, withSecrets bool) (services.GithubConnector, error) {
 	if name == "" {
 		return nil, trace.BadParameter("missing parameter name")
 	}

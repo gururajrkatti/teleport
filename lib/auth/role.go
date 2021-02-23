@@ -29,6 +29,7 @@ import (
 	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/api/types/wrappers"
 	"github.com/gravitational/teleport/lib/defaults"
+	"github.com/gravitational/teleport/lib/services"
 	"github.com/gravitational/teleport/lib/utils"
 	"github.com/gravitational/teleport/lib/utils/parse"
 
@@ -193,8 +194,8 @@ func RoleForUser(u types.User) types.Role {
 // NewDowngradedOSSAdminRole is a role for enabling RBAC for open source users.
 // This role overrides built in OSS "admin" role to have less privileges.
 // DELETE IN (7.x)
-func NewDowngradedOSSAdminRole() Role {
-	role := &RoleV3{
+func NewDowngradedOSSAdminRole() services.Role {
+	role := &services.RoleV3{
 		Kind:    services.KindRole,
 		Version: services.V3,
 		Metadata: services.Metadata{

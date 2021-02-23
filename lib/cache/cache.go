@@ -45,27 +45,27 @@ func tombstoneKey() []byte {
 // ForAuth sets up watch configuration for the auth server
 func ForAuth(cfg Config) Config {
 	cfg.target = "auth"
-	cfg.Watches = []types.WatchKind{
-		{Kind: types.KindCertAuthority, LoadSecrets: true},
-		{Kind: types.KindClusterName},
-		{Kind: types.KindClusterConfig},
-		{Kind: types.KindStaticTokens},
-		{Kind: types.KindToken},
-		{Kind: types.KindUser},
-		{Kind: types.KindRole},
-		{Kind: types.KindNamespace},
-		{Kind: types.KindNode},
-		{Kind: types.KindProxy},
-		{Kind: types.KindAuthServer},
-		{Kind: types.KindReverseTunnel},
-		{Kind: types.KindTunnelConnection},
-		{Kind: types.KindAccessRequest},
-		{Kind: types.KindAppServer},
-		{Kind: types.KindWebSession, SubKind: types.KindAppSession},
-		{Kind: types.KindWebSession, SubKind: types.KindWebSession},
-		{Kind: types.KindWebToken},
-		{Kind: types.KindRemoteCluster},
-		{Kind: types.KindKubeService},
+	cfg.Watches = []services.WatchKind{
+		{Kind: services.KindCertAuthority, LoadSecrets: true},
+		{Kind: services.KindClusterName},
+		{Kind: services.KindClusterConfig},
+		{Kind: services.KindStaticTokens},
+		{Kind: services.KindToken},
+		{Kind: services.KindUser},
+		{Kind: services.KindRole},
+		{Kind: services.KindNamespace},
+		{Kind: services.KindNode},
+		{Kind: services.KindProxy},
+		{Kind: services.KindAuthServer},
+		{Kind: services.KindReverseTunnel},
+		{Kind: services.KindTunnelConnection},
+		{Kind: services.KindAccessRequest},
+		{Kind: services.KindAppServer},
+		{Kind: services.KindWebSession, SubKind: services.KindAppSession},
+		{Kind: services.KindWebSession, SubKind: services.KindWebSession},
+		{Kind: services.KindWebToken},
+		{Kind: services.KindRemoteCluster},
+		{Kind: services.KindKubeService},
 		{Kind: types.KindDatabaseServer},
 	}
 	cfg.QueueSize = defaults.AuthQueueSize
@@ -75,24 +75,24 @@ func ForAuth(cfg Config) Config {
 // ForProxy sets up watch configuration for proxy
 func ForProxy(cfg Config) Config {
 	cfg.target = "proxy"
-	cfg.Watches = []types.WatchKind{
-		{Kind: types.KindCertAuthority, LoadSecrets: false},
-		{Kind: types.KindClusterName},
-		{Kind: types.KindClusterConfig},
-		{Kind: types.KindUser},
-		{Kind: types.KindRole},
-		{Kind: types.KindNamespace},
-		{Kind: types.KindNode},
-		{Kind: types.KindProxy},
-		{Kind: types.KindAuthServer},
-		{Kind: types.KindReverseTunnel},
-		{Kind: types.KindTunnelConnection},
-		{Kind: types.KindAppServer},
-		{Kind: types.KindWebSession, SubKind: types.KindAppSession},
-		{Kind: types.KindWebSession, SubKind: types.KindWebSession},
-		{Kind: types.KindWebToken},
-		{Kind: types.KindRemoteCluster},
-		{Kind: types.KindKubeService},
+	cfg.Watches = []services.WatchKind{
+		{Kind: services.KindCertAuthority, LoadSecrets: false},
+		{Kind: services.KindClusterName},
+		{Kind: services.KindClusterConfig},
+		{Kind: services.KindUser},
+		{Kind: services.KindRole},
+		{Kind: services.KindNamespace},
+		{Kind: services.KindNode},
+		{Kind: services.KindProxy},
+		{Kind: services.KindAuthServer},
+		{Kind: services.KindReverseTunnel},
+		{Kind: services.KindTunnelConnection},
+		{Kind: services.KindAppServer},
+		{Kind: services.KindWebSession, SubKind: services.KindAppSession},
+		{Kind: services.KindWebSession, SubKind: services.KindWebSession},
+		{Kind: services.KindWebToken},
+		{Kind: services.KindRemoteCluster},
+		{Kind: services.KindKubeService},
 		{Kind: types.KindDatabaseServer},
 	}
 	cfg.QueueSize = defaults.ProxyQueueSize
@@ -102,21 +102,21 @@ func ForProxy(cfg Config) Config {
 // ForRemoteProxy sets up watch configuration for remote proxies.
 func ForRemoteProxy(cfg Config) Config {
 	cfg.target = "remote-proxy"
-	cfg.Watches = []types.WatchKind{
-		{Kind: types.KindCertAuthority, LoadSecrets: false},
-		{Kind: types.KindClusterName},
-		{Kind: types.KindClusterConfig},
-		{Kind: types.KindUser},
-		{Kind: types.KindRole},
-		{Kind: types.KindNamespace},
-		{Kind: types.KindNode},
-		{Kind: types.KindProxy},
-		{Kind: types.KindAuthServer},
-		{Kind: types.KindReverseTunnel},
-		{Kind: types.KindTunnelConnection},
-		{Kind: types.KindAppServer},
-		{Kind: types.KindRemoteCluster},
-		{Kind: types.KindKubeService},
+	cfg.Watches = []services.WatchKind{
+		{Kind: services.KindCertAuthority, LoadSecrets: false},
+		{Kind: services.KindClusterName},
+		{Kind: services.KindClusterConfig},
+		{Kind: services.KindUser},
+		{Kind: services.KindRole},
+		{Kind: services.KindNamespace},
+		{Kind: services.KindNode},
+		{Kind: services.KindProxy},
+		{Kind: services.KindAuthServer},
+		{Kind: services.KindReverseTunnel},
+		{Kind: services.KindTunnelConnection},
+		{Kind: services.KindAppServer},
+		{Kind: services.KindRemoteCluster},
+		{Kind: services.KindKubeService},
 		{Kind: types.KindDatabaseServer},
 	}
 	cfg.QueueSize = defaults.ProxyQueueSize
@@ -128,21 +128,21 @@ func ForRemoteProxy(cfg Config) Config {
 // ForOldRemoteProxy sets up watch configuration for older remote proxies.
 func ForOldRemoteProxy(cfg Config) Config {
 	cfg.target = "remote-proxy-old"
-	cfg.Watches = []types.WatchKind{
-		{Kind: types.KindCertAuthority, LoadSecrets: false},
-		{Kind: types.KindClusterName},
-		{Kind: types.KindClusterConfig},
-		{Kind: types.KindUser},
-		{Kind: types.KindRole},
-		{Kind: types.KindNamespace},
-		{Kind: types.KindNode},
-		{Kind: types.KindProxy},
-		{Kind: types.KindAuthServer},
-		{Kind: types.KindReverseTunnel},
-		{Kind: types.KindTunnelConnection},
-		{Kind: types.KindAppServer},
-		{Kind: types.KindRemoteCluster},
-		{Kind: types.KindKubeService},
+	cfg.Watches = []services.WatchKind{
+		{Kind: services.KindCertAuthority, LoadSecrets: false},
+		{Kind: services.KindClusterName},
+		{Kind: services.KindClusterConfig},
+		{Kind: services.KindUser},
+		{Kind: services.KindRole},
+		{Kind: services.KindNamespace},
+		{Kind: services.KindNode},
+		{Kind: services.KindProxy},
+		{Kind: services.KindAuthServer},
+		{Kind: services.KindReverseTunnel},
+		{Kind: services.KindTunnelConnection},
+		{Kind: services.KindAppServer},
+		{Kind: services.KindRemoteCluster},
+		{Kind: services.KindKubeService},
 	}
 	cfg.QueueSize = defaults.ProxyQueueSize
 	return cfg
@@ -151,16 +151,16 @@ func ForOldRemoteProxy(cfg Config) Config {
 // ForNode sets up watch configuration for node
 func ForNode(cfg Config) Config {
 	cfg.target = "node"
-	cfg.Watches = []types.WatchKind{
-		{Kind: types.KindCertAuthority, LoadSecrets: false},
-		{Kind: types.KindClusterName},
-		{Kind: types.KindClusterConfig},
-		{Kind: types.KindUser},
-		{Kind: types.KindRole},
+	cfg.Watches = []services.WatchKind{
+		{Kind: services.KindCertAuthority, LoadSecrets: false},
+		{Kind: services.KindClusterName},
+		{Kind: services.KindClusterConfig},
+		{Kind: services.KindUser},
+		{Kind: services.KindRole},
 		// Node only needs to "know" about default
 		// namespace events to avoid matching too much
 		// data about other namespaces or node events
-		{Kind: types.KindNamespace, Name: defaults.Namespace},
+		{Kind: services.KindNamespace, Name: defaults.Namespace},
 	}
 	cfg.QueueSize = defaults.NodeQueueSize
 	return cfg
@@ -169,14 +169,14 @@ func ForNode(cfg Config) Config {
 // ForKubernetes sets up watch configuration for a kubernetes service.
 func ForKubernetes(cfg Config) Config {
 	cfg.target = "kube"
-	cfg.Watches = []types.WatchKind{
-		{Kind: types.KindCertAuthority, LoadSecrets: false},
-		{Kind: types.KindClusterName},
-		{Kind: types.KindClusterConfig},
-		{Kind: types.KindUser},
-		{Kind: types.KindRole},
-		{Kind: types.KindNamespace, Name: defaults.Namespace},
-		{Kind: types.KindKubeService},
+	cfg.Watches = []services.WatchKind{
+		{Kind: services.KindCertAuthority, LoadSecrets: false},
+		{Kind: services.KindClusterName},
+		{Kind: services.KindClusterConfig},
+		{Kind: services.KindUser},
+		{Kind: services.KindRole},
+		{Kind: services.KindNamespace, Name: defaults.Namespace},
+		{Kind: services.KindKubeService},
 	}
 	cfg.QueueSize = defaults.KubernetesQueueSize
 	return cfg
@@ -185,16 +185,16 @@ func ForKubernetes(cfg Config) Config {
 // ForApps sets up watch configuration for apps.
 func ForApps(cfg Config) Config {
 	cfg.target = "apps"
-	cfg.Watches = []types.WatchKind{
-		{Kind: types.KindCertAuthority, LoadSecrets: false},
-		{Kind: types.KindClusterName},
-		{Kind: types.KindClusterConfig},
-		{Kind: types.KindUser},
-		{Kind: types.KindRole},
-		{Kind: types.KindProxy},
+	cfg.Watches = []services.WatchKind{
+		{Kind: services.KindCertAuthority, LoadSecrets: false},
+		{Kind: services.KindClusterName},
+		{Kind: services.KindClusterConfig},
+		{Kind: services.KindUser},
+		{Kind: services.KindRole},
+		{Kind: services.KindProxy},
 		// Applications only need to "know" about default namespace events to avoid
 		// matching too much data about other namespaces or events.
-		{Kind: types.KindNamespace, Name: defaults.Namespace},
+		{Kind: services.KindNamespace, Name: defaults.Namespace},
 	}
 	cfg.QueueSize = defaults.AppsQueueSize
 	return cfg
@@ -202,16 +202,16 @@ func ForApps(cfg Config) Config {
 
 // ForDatabases sets up watch configuration for database proxy servers.
 func ForDatabases(cfg Config) Config {
-	cfg.Watches = []types.WatchKind{
-		{Kind: types.KindCertAuthority, LoadSecrets: false},
-		{Kind: types.KindClusterName},
-		{Kind: types.KindClusterConfig},
-		{Kind: types.KindUser},
-		{Kind: types.KindRole},
-		{Kind: types.KindProxy},
+	cfg.Watches = []services.WatchKind{
+		{Kind: services.KindCertAuthority, LoadSecrets: false},
+		{Kind: services.KindClusterName},
+		{Kind: services.KindClusterConfig},
+		{Kind: services.KindUser},
+		{Kind: services.KindRole},
+		{Kind: services.KindProxy},
 		// Databases only need to "know" about default namespace events to
 		// avoid matching too much data about other namespaces or events.
-		{Kind: types.KindNamespace, Name: defaults.Namespace},
+		{Kind: services.KindNamespace, Name: defaults.Namespace},
 	}
 	cfg.QueueSize = defaults.DatabasesQueueSize
 	return cfg
@@ -393,9 +393,9 @@ type Config struct {
 	Context context.Context
 	// Watches provides a list of resources
 	// for the cache to watch
-	Watches []types.WatchKind
+	Watches []services.WatchKind
 	// Events provides events watchers
-	Events types.Events
+	Events services.Events
 	// Trust is a service providing information about certificate
 	// authorities
 	Trust auth.Trust
@@ -522,7 +522,7 @@ type Event struct {
 	Type string
 	// Event is event processed
 	// by the event cycle
-	Event types.Event
+	Event services.Event
 }
 
 const (
@@ -638,7 +638,7 @@ func New(config Config) (*Cache, error) {
 // not the backend. This feature allows auth server
 // to handle subscribers connected to the in-memory caches
 // instead of reading from the backend.
-func (c *Cache) NewWatcher(ctx context.Context, watch types.Watch) (types.Watcher, error) {
+func (c *Cache) NewWatcher(ctx context.Context, watch services.Watch) (services.Watcher, error) {
 Outer:
 	for _, requested := range watch.Kinds {
 		for _, configured := range c.Config.Watches {
@@ -708,7 +708,7 @@ func (c *Cache) writeTombstone(ctx context.Context) {
 // - for "only recent", does nothing
 // - for "prefer recent", honors TTL set on the resource, otherwise
 //   sets TTL to max TTL
-func (c *Cache) setTTL(r types.Resource) {
+func (c *Cache) setTTL(r services.Resource) {
 	if c.OnlyRecent.Enabled || (c.PreferRecent.Enabled && c.PreferRecent.NeverExpires) {
 		return
 	}
@@ -768,7 +768,7 @@ func (c *Cache) notify(ctx context.Context, event Event) {
 //   potentially lagging behind the state of the database.
 //
 func (c *Cache) fetchAndWatch(ctx context.Context, retry utils.Retry, timer *time.Timer) error {
-	watcher, err := c.Events.NewWatcher(c.ctx, types.Watch{
+	watcher, err := c.Events.NewWatcher(c.ctx, services.Watch{
 		QueueSize:       c.QueueSize,
 		Name:            c.Component,
 		Kinds:           c.watchKinds(),
@@ -861,8 +861,8 @@ func (c *Cache) fetchAndWatch(ctx context.Context, retry utils.Retry, timer *tim
 	}
 }
 
-func (c *Cache) watchKinds() []types.WatchKind {
-	out := make([]types.WatchKind, 0, len(c.collections))
+func (c *Cache) watchKinds() []services.WatchKind {
+	out := make([]services.WatchKind, 0, len(c.collections))
 	for _, collection := range c.collections {
 		out = append(out, collection.watchKind())
 	}
@@ -913,7 +913,7 @@ func (c *Cache) fetch(ctx context.Context) (apply func(ctx context.Context) erro
 	}, nil
 }
 
-func (c *Cache) processEvent(ctx context.Context, event types.Event) error {
+func (c *Cache) processEvent(ctx context.Context, event services.Event) error {
 	resourceKind := resourceKindFromResource(event.Resource)
 	collection, ok := c.collections[resourceKind]
 	if !ok {
@@ -930,7 +930,7 @@ func (c *Cache) processEvent(ctx context.Context, event types.Event) error {
 
 // GetCertAuthority returns certificate authority by given id. Parameter loadSigningKeys
 // controls if signing keys are loaded
-func (c *Cache) GetCertAuthority(id types.CertAuthID, loadSigningKeys bool, opts ...auth.MarshalOption) (types.CertAuthority, error) {
+func (c *Cache) GetCertAuthority(id services.CertAuthID, loadSigningKeys bool, opts ...auth.MarshalOption) (services.CertAuthority, error) {
 	rg, err := c.read()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -951,7 +951,7 @@ func (c *Cache) GetCertAuthority(id types.CertAuthID, loadSigningKeys bool, opts
 
 // GetCertAuthorities returns a list of authorities of a given type
 // loadSigningKeys controls whether signing keys should be loaded or not
-func (c *Cache) GetCertAuthorities(caType services.CertAuthType, loadSigningKeys bool, opts ...auth.MarshalOption) ([]types.CertAuthority, error) {
+func (c *Cache) GetCertAuthorities(caType services.CertAuthType, loadSigningKeys bool, opts ...auth.MarshalOption) ([]services.CertAuthority, error) {
 	rg, err := c.read()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -961,7 +961,7 @@ func (c *Cache) GetCertAuthorities(caType services.CertAuthType, loadSigningKeys
 }
 
 // GetStaticTokens gets the list of static tokens used to provision nodes.
-func (c *Cache) GetStaticTokens() (types.StaticTokens, error) {
+func (c *Cache) GetStaticTokens() (services.StaticTokens, error) {
 	rg, err := c.read()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -971,7 +971,7 @@ func (c *Cache) GetStaticTokens() (types.StaticTokens, error) {
 }
 
 // GetTokens returns all active (non-expired) provisioning tokens
-func (c *Cache) GetTokens(opts ...auth.MarshalOption) ([]types.ProvisionToken, error) {
+func (c *Cache) GetTokens(opts ...auth.MarshalOption) ([]services.ProvisionToken, error) {
 	rg, err := c.read()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -981,7 +981,7 @@ func (c *Cache) GetTokens(opts ...auth.MarshalOption) ([]types.ProvisionToken, e
 }
 
 // GetToken finds and returns token by ID
-func (c *Cache) GetToken(name string) (types.ProvisionToken, error) {
+func (c *Cache) GetToken(name string) (services.ProvisionToken, error) {
 	rg, err := c.read()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -1001,8 +1001,8 @@ func (c *Cache) GetToken(name string) (types.ProvisionToken, error) {
 	return token, trace.Wrap(err)
 }
 
-// GetClusterConfig gets types.ClusterConfig from the backend.
-func (c *Cache) GetClusterConfig(opts ...auth.MarshalOption) (types.ClusterConfig, error) {
+// GetClusterConfig gets services.ClusterConfig from the backend.
+func (c *Cache) GetClusterConfig(opts ...auth.MarshalOption) (services.ClusterConfig, error) {
 	rg, err := c.read()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -1012,7 +1012,7 @@ func (c *Cache) GetClusterConfig(opts ...auth.MarshalOption) (types.ClusterConfi
 }
 
 // GetClusterName gets the name of the cluster from the backend.
-func (c *Cache) GetClusterName(opts ...auth.MarshalOption) (types.ClusterName, error) {
+func (c *Cache) GetClusterName(opts ...auth.MarshalOption) (services.ClusterName, error) {
 	rg, err := c.read()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -1022,7 +1022,7 @@ func (c *Cache) GetClusterName(opts ...auth.MarshalOption) (types.ClusterName, e
 }
 
 // GetRoles is a part of auth.AccessPoint implementation
-func (c *Cache) GetRoles() ([]types.Role, error) {
+func (c *Cache) GetRoles() ([]services.Role, error) {
 	rg, err := c.read()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -1032,7 +1032,7 @@ func (c *Cache) GetRoles() ([]types.Role, error) {
 }
 
 // GetRole is a part of auth.AccessPoint implementation
-func (c *Cache) GetRole(name string) (types.Role, error) {
+func (c *Cache) GetRole(name string) (services.Role, error) {
 	rg, err := c.read()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -1052,7 +1052,7 @@ func (c *Cache) GetRole(name string) (types.Role, error) {
 }
 
 // GetNamespace returns namespace
-func (c *Cache) GetNamespace(name string) (*types.Namespace, error) {
+func (c *Cache) GetNamespace(name string) (*services.Namespace, error) {
 	rg, err := c.read()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -1062,7 +1062,7 @@ func (c *Cache) GetNamespace(name string) (*types.Namespace, error) {
 }
 
 // GetNamespaces is a part of auth.AccessPoint implementation
-func (c *Cache) GetNamespaces() ([]types.Namespace, error) {
+func (c *Cache) GetNamespaces() ([]services.Namespace, error) {
 	rg, err := c.read()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -1072,7 +1072,7 @@ func (c *Cache) GetNamespaces() ([]types.Namespace, error) {
 }
 
 // GetNodes is a part of auth.AccessPoint implementation
-func (c *Cache) GetNodes(namespace string, opts ...auth.MarshalOption) ([]types.Server, error) {
+func (c *Cache) GetNodes(namespace string, opts ...auth.MarshalOption) ([]services.Server, error) {
 	rg, err := c.read()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -1082,7 +1082,7 @@ func (c *Cache) GetNodes(namespace string, opts ...auth.MarshalOption) ([]types.
 }
 
 // GetAuthServers returns a list of registered servers
-func (c *Cache) GetAuthServers() ([]types.Server, error) {
+func (c *Cache) GetAuthServers() ([]services.Server, error) {
 	rg, err := c.read()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -1092,7 +1092,7 @@ func (c *Cache) GetAuthServers() ([]types.Server, error) {
 }
 
 // GetReverseTunnels is a part of auth.AccessPoint implementation
-func (c *Cache) GetReverseTunnels(opts ...auth.MarshalOption) ([]types.ReverseTunnel, error) {
+func (c *Cache) GetReverseTunnels(opts ...auth.MarshalOption) ([]services.ReverseTunnel, error) {
 	rg, err := c.read()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -1102,7 +1102,7 @@ func (c *Cache) GetReverseTunnels(opts ...auth.MarshalOption) ([]types.ReverseTu
 }
 
 // GetProxies is a part of auth.AccessPoint implementation
-func (c *Cache) GetProxies() ([]types.Server, error) {
+func (c *Cache) GetProxies() ([]services.Server, error) {
 	rg, err := c.read()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -1112,7 +1112,7 @@ func (c *Cache) GetProxies() ([]types.Server, error) {
 }
 
 // GetRemoteClusters returns a list of remote clusters
-func (c *Cache) GetRemoteClusters(opts ...auth.MarshalOption) ([]types.RemoteCluster, error) {
+func (c *Cache) GetRemoteClusters(opts ...auth.MarshalOption) ([]services.RemoteCluster, error) {
 	rg, err := c.read()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -1122,7 +1122,7 @@ func (c *Cache) GetRemoteClusters(opts ...auth.MarshalOption) ([]types.RemoteClu
 }
 
 // GetRemoteCluster returns a remote cluster by name
-func (c *Cache) GetRemoteCluster(clusterName string) (types.RemoteCluster, error) {
+func (c *Cache) GetRemoteCluster(clusterName string) (services.RemoteCluster, error) {
 	rg, err := c.read()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -1132,7 +1132,7 @@ func (c *Cache) GetRemoteCluster(clusterName string) (types.RemoteCluster, error
 }
 
 // GetUser is a part of auth.AccessPoint implementation.
-func (c *Cache) GetUser(name string, withSecrets bool) (user types.User, err error) {
+func (c *Cache) GetUser(name string, withSecrets bool) (user services.User, err error) {
 	if withSecrets { // cache never tracks user secrets
 		return c.Config.Users.GetUser(name, withSecrets)
 	}
@@ -1156,7 +1156,7 @@ func (c *Cache) GetUser(name string, withSecrets bool) (user types.User, err err
 }
 
 // GetUsers is a part of auth.AccessPoint implementation
-func (c *Cache) GetUsers(withSecrets bool) (users []types.User, err error) {
+func (c *Cache) GetUsers(withSecrets bool) (users []services.User, err error) {
 	if withSecrets { // cache never tracks user secrets
 		return c.Users.GetUsers(withSecrets)
 	}
@@ -1171,7 +1171,7 @@ func (c *Cache) GetUsers(withSecrets bool) (users []types.User, err error) {
 // GetTunnelConnections is a part of auth.AccessPoint implementation
 // GetTunnelConnections are not using recent cache as they are designed
 // to be called periodically and always return fresh data
-func (c *Cache) GetTunnelConnections(clusterName string, opts ...auth.MarshalOption) ([]types.TunnelConnection, error) {
+func (c *Cache) GetTunnelConnections(clusterName string, opts ...auth.MarshalOption) ([]services.TunnelConnection, error) {
 	rg, err := c.read()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -1183,7 +1183,7 @@ func (c *Cache) GetTunnelConnections(clusterName string, opts ...auth.MarshalOpt
 // GetAllTunnelConnections is a part of auth.AccessPoint implementation
 // GetAllTunnelConnections are not using recent cache, as they are designed
 // to be called periodically and always return fresh data
-func (c *Cache) GetAllTunnelConnections(opts ...auth.MarshalOption) (conns []types.TunnelConnection, err error) {
+func (c *Cache) GetAllTunnelConnections(opts ...auth.MarshalOption) (conns []services.TunnelConnection, err error) {
 	rg, err := c.read()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -1193,7 +1193,7 @@ func (c *Cache) GetAllTunnelConnections(opts ...auth.MarshalOption) (conns []typ
 }
 
 // GetKubeServices is a part of auth.AccessPoint implementation
-func (c *Cache) GetKubeServices(ctx context.Context) ([]types.Server, error) {
+func (c *Cache) GetKubeServices(ctx context.Context) ([]services.Server, error) {
 	rg, err := c.read()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -1203,7 +1203,7 @@ func (c *Cache) GetKubeServices(ctx context.Context) ([]types.Server, error) {
 }
 
 // GetAppServers gets all application servers.
-func (c *Cache) GetAppServers(ctx context.Context, namespace string, opts ...auth.MarshalOption) ([]types.Server, error) {
+func (c *Cache) GetAppServers(ctx context.Context, namespace string, opts ...auth.MarshalOption) ([]services.Server, error) {
 	rg, err := c.read()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -1213,7 +1213,7 @@ func (c *Cache) GetAppServers(ctx context.Context, namespace string, opts ...aut
 }
 
 // GetAppSession gets an application web session.
-func (c *Cache) GetAppSession(ctx context.Context, req types.GetAppSessionRequest) (types.WebSession, error) {
+func (c *Cache) GetAppSession(ctx context.Context, req services.GetAppSessionRequest) (services.WebSession, error) {
 	rg, err := c.read()
 	if err != nil {
 		return nil, trace.Wrap(err)

@@ -5,26 +5,26 @@ import (
 	"log"
 	"time"
 
-	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib/auth"
-	"github.com/gravitational/teleport/lib/auth/client"
+	authclient "github.com/gravitational/teleport/lib/auth/client"
+	"github.com/gravitational/teleport/lib/services"
 )
 
 // rolesCRUD performs each roles crud function as an example
-func roleCRUD(ctx context.Context, client *client.Client) {
+func roleCRUD(ctx context.Context, client *authclient.Client) {
 	// create a new auditor role which has very limited permissions
-	role, err := types.NewRole("auditor", types.RoleSpecV3{
-		Options: types.RoleOptions{
-			MaxSessionTTL: types.Duration(time.Hour),
+	role, err := services.NewRole("auditor", services.RoleSpecV3{
+		Options: services.RoleOptions{
+			MaxSessionTTL: services.Duration(time.Hour),
 		},
-		Allow: types.RoleConditions{
+		Allow: services.RoleConditions{
 			Logins: []string{"auditor"},
-			Rules: []types.Rule{
-				types.NewRule(types.KindSession, auth.RO()),
+			Rules: []services.Rule{
+				services.NewRule(services.KindSession, auth.RO()),
 			},
 		},
-		Deny: types.RoleConditions{
-			NodeLabels: types.Labels{"*": []string{"*"}},
+		Deny: services.RoleConditions{
+			NodeLabels: services.Labels{"*": []string{"*"}},
 		},
 	})
 	if err != nil {
@@ -59,8 +59,8 @@ func roleCRUD(ctx context.Context, client *client.Client) {
 	log.Printf("Retrieved Role: %v", role.GetName())
 
 	// update the auditor role's ttl to one day
-	role.SetOptions(types.RoleOptions{
-		MaxSessionTTL: types.Duration(time.Hour * 24),
+	role.SetOptions(services.RoleOptions{
+		MaxSessionTTL: services.Duration(time.Hour * 24),
 	})
 	if err = client.UpsertRole(ctx, role); err != nil {
 		log.Printf("Failed to update role: %v", err)

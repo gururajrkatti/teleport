@@ -40,22 +40,22 @@ const (
 
 // Compare compares two provided resources.
 func Compare(a, b Resource) int {
-	if serverA, ok := a.(types.Server); ok {
-		if serverB, ok := b.(types.Server); ok {
-			return compareServers(serverA, serverB)
+	if serverA, ok := a.(Server); ok {
+		if serverB, ok := b.(Server); ok {
+			return CompareServers(serverA, serverB)
 		}
 	}
 	if dbA, ok := a.(types.DatabaseServer); ok {
 		if dbB, ok := b.(types.DatabaseServer); ok {
-			return compareDatabaseServers(dbA, dbB)
+			return CompareDatabaseServers(dbA, dbB)
 		}
 	}
 	return Different
 }
 
-// compareServers returns difference between two server
+// CompareServers returns difference between two server
 // objects, Equal (0) if identical, OnlyTimestampsDifferent(1) if only timestamps differ, Different(2) otherwise
-func compareServers(a, b types.Server) int {
+func CompareServers(a, b Server) int {
 	if a.GetKind() != b.GetKind() {
 		return Different
 	}
@@ -95,8 +95,8 @@ func compareServers(a, b types.Server) int {
 	}
 
 	// If this server is proxying applications, compare them to make sure they match.
-	if a.GetKind() == types.KindAppServer {
-		return compareApps(a.GetApps(), b.GetApps())
+	if a.GetKind() == KindAppServer {
+		return CompareApps(a.GetApps(), b.GetApps())
 	}
 
 	if !cmp.Equal(a.GetKubernetesClusters(), b.GetKubernetesClusters()) {
@@ -106,9 +106,9 @@ func compareServers(a, b types.Server) int {
 	return Equal
 }
 
-// compareApps compares two slices of apps and returns if they are equal or
+// CompareApps compares two slices of apps and returns if they are equal or
 // different.
-func compareApps(a []*types.App, b []*types.App) int {
+func CompareApps(a []*App, b []*App) int {
 	if len(a) != len(b) {
 		return Different
 	}
@@ -143,9 +143,9 @@ func compareApps(a []*types.App, b []*types.App) int {
 	return Equal
 }
 
-// compareDatabaseServers returns whether the two provided database servers
+// CompareDatabaseServers returns whether the two provided database servers
 // are equal or different.
-func compareDatabaseServers(a, b types.DatabaseServer) int {
+func CompareDatabaseServers(a, b types.DatabaseServer) int {
 	if a.GetKind() != b.GetKind() {
 		return Different
 	}
@@ -182,7 +182,7 @@ func compareDatabaseServers(a, b types.DatabaseServer) int {
 
 // CmdLabelMapsEqual compares two maps with command labels,
 // returns true if label sets are equal
-func CmdLabelMapsEqual(a, b map[string]types.CommandLabel) bool {
+func CmdLabelMapsEqual(a, b map[string]CommandLabel) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -199,7 +199,7 @@ func CmdLabelMapsEqual(a, b map[string]types.CommandLabel) bool {
 }
 
 // CommandLabels is a set of command labels
-type CommandLabels map[string]types.CommandLabel
+type CommandLabels map[string]CommandLabel
 
 // Clone returns copy of the set
 func (c *CommandLabels) Clone() CommandLabels {
@@ -219,7 +219,7 @@ func (c *CommandLabels) SetEnv(v string) error {
 }
 
 // SortedServers is a sort wrapper that sorts servers by name
-type SortedServers []types.Server
+type SortedServers []Server
 
 func (s SortedServers) Len() int {
 	return len(s)
@@ -234,7 +234,7 @@ func (s SortedServers) Swap(i, j int) {
 }
 
 // SortedReverseTunnels sorts reverse tunnels by cluster name
-type SortedReverseTunnels []types.ReverseTunnel
+type SortedReverseTunnels []ReverseTunnel
 
 func (s SortedReverseTunnels) Len() int {
 	return len(s)
@@ -255,7 +255,7 @@ func (s SortedReverseTunnels) Swap(i, j int) {
 // version will also be returned.
 //
 // Returns empty value if there are no proxies.
-func GuessProxyHostAndVersion(proxies []types.Server) (string, string, error) {
+func GuessProxyHostAndVersion(proxies []Server) (string, string, error) {
 	if len(proxies) == 0 {
 		return "", "", trace.NotFound("list of proxies empty")
 	}

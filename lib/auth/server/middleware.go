@@ -25,12 +25,12 @@ import (
 	"net/http"
 
 	"github.com/gravitational/teleport"
-	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib/auth"
 	"github.com/gravitational/teleport/lib/auth/resource"
 	"github.com/gravitational/teleport/lib/defaults"
 	"github.com/gravitational/teleport/lib/limiter"
 	"github.com/gravitational/teleport/lib/multiplexer"
+	"github.com/gravitational/teleport/lib/services"
 	"github.com/gravitational/teleport/lib/tlsca"
 	"github.com/gravitational/teleport/lib/utils"
 
@@ -545,13 +545,13 @@ func (a *Middleware) WrapContextWithUser(ctx context.Context, conn *tls.Conn) (c
 // ClientCertPool returns trusted x509 cerificate authority pool
 func ClientCertPool(client auth.AccessCache, clusterName string) (*x509.CertPool, error) {
 	pool := x509.NewCertPool()
-	var authorities []types.CertAuthority
+	var authorities []services.CertAuthority
 	if clusterName == "" {
-		hostCAs, err := client.GetCertAuthorities(types.HostCA, false, resource.SkipValidation())
+		hostCAs, err := client.GetCertAuthorities(services.HostCA, false, resource.SkipValidation())
 		if err != nil {
 			return nil, trace.Wrap(err)
 		}
-		userCAs, err := client.GetCertAuthorities(types.UserCA, false, resource.SkipValidation())
+		userCAs, err := client.GetCertAuthorities(services.UserCA, false, resource.SkipValidation())
 		if err != nil {
 			return nil, trace.Wrap(err)
 		}
@@ -559,13 +559,13 @@ func ClientCertPool(client auth.AccessCache, clusterName string) (*x509.CertPool
 		authorities = append(authorities, userCAs...)
 	} else {
 		hostCA, err := client.GetCertAuthority(
-			types.CertAuthID{Type: types.HostCA, DomainName: clusterName},
+			services.CertAuthID{Type: services.HostCA, DomainName: clusterName},
 			false, resource.SkipValidation())
 		if err != nil {
 			return nil, trace.Wrap(err)
 		}
 		userCA, err := client.GetCertAuthority(
-			types.CertAuthID{Type: types.UserCA, DomainName: clusterName},
+			services.CertAuthID{Type: services.UserCA, DomainName: clusterName},
 			false, resource.SkipValidation())
 		if err != nil {
 			return nil, trace.Wrap(err)

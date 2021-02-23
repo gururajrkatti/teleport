@@ -232,6 +232,10 @@ var (
 // namespace.go
 type SortedNamespaces = types.SortedNamespaces
 
+var (
+	IsValidNamespace = types.IsValidNamespace
+)
+
 // oidc.go
 type (
 	OIDCConnector       = types.OIDCConnector
@@ -505,4 +509,11 @@ const (
 	VerbUpdate                    = types.VerbUpdate
 	VerbDelete                    = types.VerbDelete
 	VerbRotate                    = types.VerbRotate
+)
+
+const (
+	// Allow is the set of conditions that allow access.
+	Allow RoleConditionType = true
+	// Deny is the set of conditions that prevent access.
+	Deny RoleConditionType = false
 )

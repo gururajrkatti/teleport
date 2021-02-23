@@ -45,6 +45,7 @@ import (
 	"github.com/gravitational/teleport/lib/defaults"
 	"github.com/gravitational/teleport/lib/events"
 	"github.com/gravitational/teleport/lib/fixtures"
+	"github.com/gravitational/teleport/lib/services"
 	"github.com/gravitational/teleport/lib/tlsca"
 	"github.com/gravitational/teleport/lib/utils"
 
@@ -78,7 +79,7 @@ func (s *AuthSuite) SetUpTest(c *C) {
 	s.bk, err = lite.NewWithConfig(context.TODO(), lite.Config{Path: s.dataDir})
 	c.Assert(err, IsNil)
 
-	clusterName, err := types.NewClusterName(types.ClusterNameSpecV2{
+	clusterName, err := services.NewClusterName(services.ClusterNameSpecV2{
 		ClusterName: "me.localhost",
 	})
 	c.Assert(err, IsNil)
@@ -96,14 +97,14 @@ func (s *AuthSuite) SetUpTest(c *C) {
 	c.Assert(err, IsNil)
 
 	// set static tokens
-	staticTokens, err := types.NewStaticTokens(types.StaticTokensSpecV2{
-		StaticTokens: []types.ProvisionTokenV1{},
+	staticTokens, err := services.NewStaticTokens(services.StaticTokensSpecV2{
+		StaticTokens: []services.ProvisionTokenV1{},
 	})
 	c.Assert(err, IsNil)
 	err = s.a.SetStaticTokens(staticTokens)
 	c.Assert(err, IsNil)
 
-	authPreference, err := types.NewAuthPreference(types.AuthPreferenceSpecV2{
+	authPreference, err := services.NewAuthPreference(services.AuthPreferenceSpecV2{
 		Type:         teleport.Local,
 		SecondFactor: constants.SecondFactorOff,
 	})
@@ -127,10 +128,10 @@ func (s *AuthSuite) TearDownTest(c *C) {
 
 func (s *AuthSuite) TestSessions(c *C) {
 	c.Assert(s.a.UpsertCertAuthority(
-		test.NewCA(types.UserCA, "me.localhost")), IsNil)
+		test.NewCA(services.UserCA, "me.localhost")), IsNil)
 
 	c.Assert(s.a.UpsertCertAuthority(
-		test.NewCA(types.HostCA, "me.localhost")), IsNil)
+		test.NewCA(services.HostCA, "me.localhost")), IsNil)
 
 	user := "user1"
 	pass := []byte("abc123")
@@ -174,8 +175,8 @@ func (s *AuthSuite) TestSessions(c *C) {
 
 func (s *AuthSuite) TestAuthenticateSSHUser(c *C) {
 	ctx := context.Background()
-	c.Assert(s.a.UpsertCertAuthority(test.NewCA(types.UserCA, "me.localhost")), IsNil)
-	c.Assert(s.a.UpsertCertAuthority(test.NewCA(types.HostCA, "me.localhost")), IsNil)
+	c.Assert(s.a.UpsertCertAuthority(test.NewCA(services.UserCA, "me.localhost")), IsNil)
+	c.Assert(s.a.UpsertCertAuthority(test.NewCA(services.HostCA, "me.localhost")), IsNil)
 
 	// Register the leaf cluster.
 	leaf, err := types.NewRemoteCluster("leaf.localhost")
@@ -201,8 +202,8 @@ func (s *AuthSuite) TestAuthenticateSSHUser(c *C) {
 	err = s.a.UpsertPassword(user, pass)
 	c.Assert(err, IsNil)
 	// Give the role some k8s principals too.
-	role.SetKubeUsers(types.Allow, []string{user})
-	role.SetKubeGroups(types.Allow, []string{"system:masters"})
+	role.SetKubeUsers(services.Allow, []string{user})
+	role.SetKubeGroups(services.Allow, []string{"system:masters"})
 	err = s.a.UpsertRole(ctx, role)
 	c.Assert(err, IsNil)
 
@@ -283,12 +284,12 @@ func (s *AuthSuite) TestAuthenticateSSHUser(c *C) {
 
 	// Register a kubernetes cluster to verify the defaulting logic in TLS cert
 	// generation.
-	err = s.a.UpsertKubeService(ctx, &types.ServerV2{
-		Metadata: types.Metadata{Name: "kube-service"},
-		Kind:     types.KindKubeService,
-		Version:  types.V2,
-		Spec: types.ServerSpecV2{
-			KubernetesClusters: []*types.KubernetesCluster{{Name: "root-kube-cluster"}},
+	err = s.a.UpsertKubeService(ctx, &services.ServerV2{
+		Metadata: services.Metadata{Name: "kube-service"},
+		Kind:     services.KindKubeService,
+		Version:  services.V2,
+		Spec: services.ServerSpecV2{
+			KubernetesClusters: []*services.KubernetesCluster{{Name: "root-kube-cluster"}},
 		},
 	})
 	c.Assert(err, IsNil)
@@ -358,12 +359,12 @@ func (s *AuthSuite) TestAuthenticateSSHUser(c *C) {
 
 	// Register a kubernetes cluster to verify the defaulting logic in TLS cert
 	// generation.
-	err = s.a.UpsertKubeService(ctx, &types.ServerV2{
-		Metadata: types.Metadata{Name: "kube-service"},
-		Kind:     types.KindKubeService,
-		Version:  types.V2,
-		Spec: types.ServerSpecV2{
-			KubernetesClusters: []*types.KubernetesCluster{{Name: "root-kube-cluster"}},
+	err = s.a.UpsertKubeService(ctx, &services.ServerV2{
+		Metadata: services.Metadata{Name: "kube-service"},
+		Kind:     services.KindKubeService,
+		Version:  services.V2,
+		Spec: services.ServerSpecV2{
+			KubernetesClusters: []*services.KubernetesCluster{{Name: "root-kube-cluster"}},
 		},
 	})
 	c.Assert(err, IsNil)
@@ -447,10 +448,10 @@ func (s *AuthSuite) TestAuthenticateSSHUser(c *C) {
 
 func (s *AuthSuite) TestUserLock(c *C) {
 	c.Assert(s.a.UpsertCertAuthority(
-		test.NewCA(types.UserCA, "me.localhost")), IsNil)
+		test.NewCA(services.UserCA, "me.localhost")), IsNil)
 
 	c.Assert(s.a.UpsertCertAuthority(
-		test.NewCA(types.HostCA, "me.localhost")), IsNil)
+		test.NewCA(services.HostCA, "me.localhost")), IsNil)
 
 	username := "user1"
 	pass := []byte("abc123")
@@ -503,7 +504,7 @@ func (s *AuthSuite) TestUserLock(c *C) {
 func (s *AuthSuite) TestTokensCRUD(c *C) {
 	ctx := context.Background()
 	c.Assert(s.a.UpsertCertAuthority(
-		test.NewCA(types.HostCA, "me.localhost")), IsNil)
+		test.NewCA(services.HostCA, "me.localhost")), IsNil)
 
 	// before we do anything, we should have 0 tokens
 	btokens, err := s.a.GetTokens()
@@ -775,11 +776,11 @@ func (s *AuthSuite) TestUpdateConfig(c *C) {
 	c.Assert(cn.GetClusterName(), Equals, "me.localhost")
 	st, err := s.a.GetStaticTokens()
 	c.Assert(err, IsNil)
-	c.Assert(st.GetStaticTokens(), DeepEquals, []types.ProvisionToken{})
+	c.Assert(st.GetStaticTokens(), DeepEquals, []services.ProvisionToken{})
 
 	// try and set cluster name, this should fail because you can only set the
 	// cluster name once
-	clusterName, err := types.NewClusterName(types.ClusterNameSpecV2{
+	clusterName, err := services.NewClusterName(services.ClusterNameSpecV2{
 		ClusterName: "foo.localhost",
 	})
 	c.Assert(err, IsNil)
@@ -797,8 +798,8 @@ func (s *AuthSuite) TestUpdateConfig(c *C) {
 	c.Assert(err, NotNil)
 	// try and set static tokens, this should be successful because the last
 	// one to upsert tokens wins
-	staticTokens, err := types.NewStaticTokens(types.StaticTokensSpecV2{
-		StaticTokens: []types.ProvisionTokenV1{{
+	staticTokens, err := services.NewStaticTokens(services.StaticTokensSpecV2{
+		StaticTokens: []services.ProvisionTokenV1{{
 			Token: "bar",
 			Roles: teleport.Roles{teleport.Role("baz")},
 		}},
@@ -814,7 +815,7 @@ func (s *AuthSuite) TestUpdateConfig(c *C) {
 	c.Assert(cn.GetClusterName(), Equals, "me.localhost")
 	st, err = s.a.GetStaticTokens()
 	c.Assert(err, IsNil)
-	c.Assert(st.GetStaticTokens(), DeepEquals, types.ProvisionTokensFromV1([]types.ProvisionTokenV1{{
+	c.Assert(st.GetStaticTokens(), DeepEquals, services.ProvisionTokensFromV1([]services.ProvisionTokenV1{{
 		Token: "bar",
 		Roles: teleport.Roles{teleport.Role("baz")},
 	}}))
@@ -823,21 +824,21 @@ func (s *AuthSuite) TestUpdateConfig(c *C) {
 	// new static tokens
 	st, err = authServer.GetStaticTokens()
 	c.Assert(err, IsNil)
-	c.Assert(st.GetStaticTokens(), DeepEquals, types.ProvisionTokensFromV1([]types.ProvisionTokenV1{{
+	c.Assert(st.GetStaticTokens(), DeepEquals, services.ProvisionTokensFromV1([]services.ProvisionTokenV1{{
 		Token: "bar",
 		Roles: teleport.Roles{teleport.Role("baz")},
 	}}))
 }
 
 func (s *AuthSuite) TestCreateAndUpdateUserEventsEmitted(c *C) {
-	user, err := types.NewUser("some-user")
+	user, err := services.NewUser("some-user")
 	c.Assert(err, IsNil)
 
 	ctx := context.Background()
 
 	// test create uesr, happy path
-	user.SetCreatedBy(types.CreatedBy{
-		User: types.UserRef{Name: "some-auth-user"},
+	user.SetCreatedBy(services.CreatedBy{
+		User: services.UserRef{Name: "some-auth-user"},
 	})
 	err = s.a.CreateUser(ctx, user)
 	c.Assert(err, IsNil)
@@ -851,7 +852,7 @@ func (s *AuthSuite) TestCreateAndUpdateUserEventsEmitted(c *C) {
 	c.Assert(s.mockEmitter.LastEvent(), IsNil)
 
 	// test createdBy gets set to default
-	user2, err := types.NewUser("some-other-user")
+	user2, err := services.NewUser("some-other-user")
 	c.Assert(err, IsNil)
 	err = s.a.CreateUser(ctx, user2)
 	c.Assert(err, IsNil)
@@ -859,7 +860,7 @@ func (s *AuthSuite) TestCreateAndUpdateUserEventsEmitted(c *C) {
 	s.mockEmitter.Reset()
 
 	// test update on non-existent user
-	user3, err := types.NewUser("non-existent-user")
+	user3, err := services.NewUser("non-existent-user")
 	c.Assert(err, IsNil)
 	err = s.a.UpdateUser(ctx, user3)
 	c.Assert(trace.IsNotFound(err), Equals, true)
@@ -875,9 +876,9 @@ func (s *AuthSuite) TestCreateAndUpdateUserEventsEmitted(c *C) {
 func (s *AuthSuite) TestUpsertDeleteRoleEventsEmitted(c *C) {
 	ctx := context.Background()
 	// test create new role
-	roleTest, err := types.NewRole("test", types.RoleSpecV3{
-		Options: types.RoleOptions{},
-		Allow:   types.RoleConditions{},
+	roleTest, err := services.NewRole("test", services.RoleSpecV3{
+		Options: services.RoleOptions{},
+		Allow:   services.RoleConditions{},
 	})
 	c.Assert(err, IsNil)
 
@@ -923,7 +924,7 @@ func (s *AuthSuite) TestTrustedClusterCRUDEventEmitted(c *C) {
 
 	// set up existing cluster to bypass switch cases that
 	// makes a network request when creating new clusters
-	tc, err := types.NewTrustedCluster("test", types.TrustedClusterSpecV2{
+	tc, err := services.NewTrustedCluster("test", services.TrustedClusterSpecV2{
 		Enabled:              true,
 		Roles:                []string{"a"},
 		ReverseTunnelAddress: "b",
@@ -932,8 +933,8 @@ func (s *AuthSuite) TestTrustedClusterCRUDEventEmitted(c *C) {
 	_, err = s.a.Presence.UpsertTrustedCluster(ctx, tc)
 	c.Assert(err, IsNil)
 
-	c.Assert(s.a.UpsertCertAuthority(test.NewCA(types.UserCA, "test")), IsNil)
-	c.Assert(s.a.UpsertCertAuthority(test.NewCA(types.HostCA, "test")), IsNil)
+	c.Assert(s.a.UpsertCertAuthority(test.NewCA(services.UserCA, "test")), IsNil)
+	c.Assert(s.a.UpsertCertAuthority(test.NewCA(services.HostCA, "test")), IsNil)
 
 	err = s.a.createReverseTunnel(tc)
 	c.Assert(err, IsNil)
@@ -963,7 +964,7 @@ func (s *AuthSuite) TestTrustedClusterCRUDEventEmitted(c *C) {
 func (s *AuthSuite) TestGithubConnectorCRUDEventsEmitted(c *C) {
 	ctx := context.Background()
 	// test github create event
-	github := types.NewGithubConnector("test", types.GithubConnectorSpecV3{})
+	github := services.NewGithubConnector("test", services.GithubConnectorSpecV3{})
 	err := s.a.upsertGithubConnector(ctx, github)
 	c.Assert(err, IsNil)
 	c.Assert(s.mockEmitter.LastEvent().GetType(), DeepEquals, events.GithubConnectorCreatedEvent)
@@ -984,7 +985,7 @@ func (s *AuthSuite) TestGithubConnectorCRUDEventsEmitted(c *C) {
 func (s *AuthSuite) TestOIDCConnectorCRUDEventsEmitted(c *C) {
 	ctx := context.Background()
 	// test oidc create event
-	oidc := types.NewOIDCConnector("test", types.OIDCConnectorSpecV2{ClientID: "a"})
+	oidc := services.NewOIDCConnector("test", services.OIDCConnectorSpecV2{ClientID: "a"})
 	err := s.a.UpsertOIDCConnector(ctx, oidc)
 	c.Assert(err, IsNil)
 	c.Assert(s.mockEmitter.LastEvent().GetType(), DeepEquals, events.OIDCConnectorCreatedEvent)
@@ -1021,7 +1022,7 @@ func (s *AuthSuite) TestSAMLConnectorCRUDEventsEmitted(c *C) {
 	c.Assert(err, IsNil)
 
 	// test saml create
-	saml := types.NewSAMLConnector("test", types.SAMLConnectorSpecV2{
+	saml := services.NewSAMLConnector("test", services.SAMLConnectorSpecV2{
 		AssertionConsumerService: "a",
 		Issuer:                   "b",
 		SSO:                      "c",

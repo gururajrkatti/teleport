@@ -20,14 +20,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib/auth"
 	"github.com/gravitational/teleport/lib/auth/resource"
 	"github.com/gravitational/teleport/lib/backend"
 	"github.com/gravitational/teleport/lib/backend/lite"
 	"github.com/gravitational/teleport/lib/fixtures"
 	"github.com/gravitational/teleport/lib/services"
-	"github.com/gravitational/teleport/lib/utils"
 
 	"gopkg.in/check.v1"
 	"gopkg.in/yaml.v2"
@@ -51,33 +49,33 @@ func (s *ClusterConfigurationSuite) TearDownTest(c *check.C) {
 
 func (s *ClusterConfigurationSuite) TestSessionRecording(c *check.C) {
 	// don't allow invalid session recording values
-	_, err := types.NewClusterConfig(types.ClusterConfigSpecV3{
+	_, err := services.NewClusterConfig(services.ClusterConfigSpecV3{
 		SessionRecording: "foo",
 	})
 	c.Assert(err, check.NotNil)
 
 	// default is to record at the node
-	clusterConfig, err := types.NewClusterConfig(types.ClusterConfigSpecV3{})
+	clusterConfig, err := services.NewClusterConfig(services.ClusterConfigSpecV3{})
 	c.Assert(err, check.IsNil)
 	recordingType := clusterConfig.GetSessionRecording()
-	c.Assert(recordingType, check.Equals, types.RecordAtNode)
+	c.Assert(recordingType, check.Equals, services.RecordAtNode)
 
 	// update sessions to be recorded at the proxy and check again
-	clusterConfig.SetSessionRecording(types.RecordAtProxy)
+	clusterConfig.SetSessionRecording(services.RecordAtProxy)
 	recordingType = clusterConfig.GetSessionRecording()
-	c.Assert(recordingType, check.Equals, types.RecordAtProxy)
+	c.Assert(recordingType, check.Equals, services.RecordAtProxy)
 }
 
 func (s *ClusterConfigurationSuite) TestAuditConfig(c *check.C) {
 	// default is to record at the node
-	clusterConfig, err := types.NewClusterConfig(types.ClusterConfigSpecV3{})
+	clusterConfig, err := services.NewClusterConfig(services.ClusterConfigSpecV3{})
 	c.Assert(err, check.IsNil)
 
 	cfg := clusterConfig.GetAuditConfig()
-	c.Assert(cfg, check.DeepEquals, types.AuditConfig{})
+	c.Assert(cfg, check.DeepEquals, services.AuditConfig{})
 
 	// update sessions to be recorded at the proxy and check again
-	in := types.AuditConfig{
+	in := services.AuditConfig{
 		Region:           "us-west-1",
 		Type:             "dynamodb",
 		AuditSessionsURI: "file:///home/log",
@@ -115,7 +113,7 @@ audit_events_uri: 'dynamodb://audit_table_name'
 
 	out2, err = auth.AuditConfigFromObject(data)
 	c.Assert(err, check.IsNil)
-	fixtures.DeepCompare(c, *out2, types.AuditConfig{
+	fixtures.DeepCompare(c, *out2, services.AuditConfig{
 		Region:           "us-west-1",
 		Type:             "dir",
 		AuditSessionsURI: "file:///home/log",
@@ -125,12 +123,12 @@ audit_events_uri: 'dynamodb://audit_table_name'
 
 func (s *ClusterConfigurationSuite) TestClusterConfigMarshal(c *check.C) {
 	// signle audit_events uri value
-	clusterConfig, err := types.NewClusterConfig(types.ClusterConfigSpecV3{
-		ClientIdleTimeout:     types.NewDuration(17 * time.Second),
-		DisconnectExpiredCert: types.NewBool(true),
+	clusterConfig, err := services.NewClusterConfig(services.ClusterConfigSpecV3{
+		ClientIdleTimeout:     services.NewDuration(17 * time.Second),
+		DisconnectExpiredCert: services.NewBool(true),
 		ClusterID:             "27",
-		SessionRecording:      types.RecordAtProxy,
-		Audit: types.AuditConfig{
+		SessionRecording:      services.RecordAtProxy,
+		Audit: services.AuditConfig{
 			Region:           "us-west-1",
 			Type:             "dynamodb",
 			AuditSessionsURI: "file:///home/log",
@@ -148,12 +146,12 @@ func (s *ClusterConfigurationSuite) TestClusterConfigMarshal(c *check.C) {
 	fixtures.DeepCompare(c, clusterConfig, out)
 
 	// multiple events uri values
-	clusterConfig, err = types.NewClusterConfig(types.ClusterConfigSpecV3{
-		ClientIdleTimeout:     types.NewDuration(17 * time.Second),
-		DisconnectExpiredCert: types.NewBool(true),
+	clusterConfig, err = services.NewClusterConfig(services.ClusterConfigSpecV3{
+		ClientIdleTimeout:     services.NewDuration(17 * time.Second),
+		DisconnectExpiredCert: services.NewBool(true),
 		ClusterID:             "27",
-		SessionRecording:      types.RecordAtProxy,
-		Audit: types.AuditConfig{
+		SessionRecording:      services.RecordAtProxy,
+		Audit: services.AuditConfig{
 			Region:           "us-west-1",
 			Type:             "dynamodb",
 			AuditSessionsURI: "file:///home/log",

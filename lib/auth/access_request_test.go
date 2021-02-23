@@ -23,7 +23,6 @@ import (
 	"github.com/gravitational/teleport/lib/fixtures"
 	"github.com/gravitational/teleport/lib/utils"
 
-	"github.com/pborman/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -151,10 +150,10 @@ func TestPluginDataFilterMatching(t *testing.T) {
 
 // TestRequestFilterMatching verifies expected matching behavior for AccessRequestFilter.
 func TestRequestFilterMatching(t *testing.T) {
-	reqA, err := types.NewAccessRequest(uuid.New(), "alice", "role-a")
+	reqA, err := NewAccessRequest("alice", "role-a")
 	require.NoError(t, err)
 
-	reqB, err := types.NewAccessRequest(uuid.New(), "bob", "role-b")
+	reqB, err := NewAccessRequest("bob", "role-b")
 	require.NoError(t, err)
 
 	testCases := []struct {

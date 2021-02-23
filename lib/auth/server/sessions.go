@@ -26,6 +26,7 @@ import (
 	"github.com/gravitational/teleport/lib/auth"
 	"github.com/gravitational/teleport/lib/jwt"
 	"github.com/gravitational/teleport/lib/modules"
+	"github.com/gravitational/teleport/lib/services"
 	"github.com/gravitational/teleport/lib/utils"
 
 	"github.com/gravitational/trace"
@@ -33,18 +34,18 @@ import (
 	"github.com/pborman/uuid"
 )
 
-// CreateAppSession creates and inserts a types.WebSession into the
+// CreateAppSession creates and inserts a services.WebSession into the
 // backend with the identity of the caller used to generate the certificate.
 // The certificate is used for all access requests, which is where access
 // control is enforced.
-func (s *Server) CreateAppSession(ctx context.Context, req types.CreateAppSessionRequest, user types.User, checker auth.AccessChecker) (types.WebSession, error) {
+func (s *Server) CreateAppSession(ctx context.Context, req services.CreateAppSessionRequest, user services.User, checker auth.AccessChecker) (services.WebSession, error) {
 	if !modules.GetModules().Features().App {
 		return nil, trace.AccessDenied(
 			"this Teleport cluster doesn't support application access, please contact the cluster administrator")
 	}
 
 	// Check that a matching parent web session exists in the backend.
-	parentSession, err := s.Services.GetWebSession(ctx, types.GetWebSessionRequest{
+	parentSession, err := s.GetWebSession(ctx, types.GetWebSessionRequest{
 		User:      req.Username,
 		SessionID: req.ParentSession,
 	})
@@ -82,19 +83,19 @@ func (s *Server) CreateAppSession(ctx context.Context, req types.CreateAppSessio
 		return nil, trace.Wrap(err)
 	}
 
-	// Create types.WebSession for this session.
+	// Create services.WebSession for this session.
 	sessionID, err := utils.CryptoRandomHex(SessionTokenBytes)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	session := types.NewWebSession(sessionID, types.KindWebSession, types.KindAppSession, types.WebSessionSpecV2{
+	session := services.NewWebSession(sessionID, services.KindWebSession, services.KindAppSession, services.WebSessionSpecV2{
 		User:    req.Username,
 		Priv:    privateKey,
 		Pub:     certs.ssh,
 		TLSCert: certs.tls,
 		Expires: s.clock.Now().Add(ttl),
 	})
-	if err = s.Services.Identity.UpsertAppSession(ctx, session); err != nil {
+	if err = s.Identity.UpsertAppSession(ctx, session); err != nil {
 		return nil, trace.Wrap(err)
 	}
 	log.Debugf("Generated application web session for %v with TTL %v.", req.Username, ttl)
@@ -110,8 +111,8 @@ func (s *Server) generateAppToken(username string, roles []string, uri string, e
 	if err != nil {
 		return "", trace.Wrap(err)
 	}
-	ca, err := s.GetCertAuthority(types.CertAuthID{
-		Type:       types.JWTSigner,
+	ca, err := s.GetCertAuthority(services.CertAuthID{
+		Type:       services.JWTSigner,
 		DomainName: clusterName,
 	}, true)
 	if err != nil {

@@ -5,16 +5,15 @@ import (
 	"log"
 	"time"
 
-	"github.com/gravitational/teleport/api/types"
+	"github.com/gravitational/teleport/lib/auth"
 	"github.com/gravitational/teleport/lib/auth/client"
-
-	"github.com/pborman/uuid"
+	"github.com/gravitational/teleport/lib/services"
 )
 
 // accessWorkflow performs the necessary access management functions as an example
 func accessWorkflow(ctx context.Context, client *client.Client) {
 	// create access request for api-admin to temporarily use the admin role in the cluster
-	accessReq, err := types.NewAccessRequest(uuid.New(), "api-admin", "admin")
+	accessReq, err := auth.NewAccessRequest("api-admin", "admin")
 	if err != nil {
 		log.Printf("Failed to make new access request: %v", err)
 		return
@@ -46,7 +45,7 @@ func accessWorkflow(ctx context.Context, client *client.Client) {
 	}()
 
 	// retrieve all pending access requests
-	filter := types.AccessRequestFilter{State: types.RequestState_PENDING}
+	filter := services.AccessRequestFilter{State: services.RequestState_PENDING}
 	accessReqs, err := client.GetAccessRequests(ctx, filter)
 	if err != nil {
 		log.Printf("Failed to retrieve access requests: %v", accessReqs)
@@ -59,9 +58,9 @@ func accessWorkflow(ctx context.Context, client *client.Client) {
 	}
 
 	// approve access request
-	if err = client.SetAccessRequestState(ctx, types.AccessRequestUpdate{
+	if err = client.SetAccessRequestState(ctx, services.AccessRequestUpdate{
 		RequestID: accessReq.GetName(),
-		State:     types.RequestState_APPROVED,
+		State:     services.RequestState_APPROVED,
 		Reason:    "seems legit",
 		// Roles: If you don't want to grant all the roles requested,
 		// you can provide a subset of role with the Roles field.
@@ -73,9 +72,9 @@ func accessWorkflow(ctx context.Context, client *client.Client) {
 	log.Println("Approved Access Request")
 
 	// deny access request
-	if err = client.SetAccessRequestState(ctx, types.AccessRequestUpdate{
+	if err = client.SetAccessRequestState(ctx, services.AccessRequestUpdate{
 		RequestID: accessReq.GetName(),
-		State:     types.RequestState_DENIED,
+		State:     services.RequestState_DENIED,
 		Reason:    "not today",
 	}); err != nil {
 		log.Printf("Failed to deny request: %v", err)

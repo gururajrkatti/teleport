@@ -38,7 +38,6 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 
 	"github.com/gravitational/teleport"
-	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib/auth"
 	"github.com/gravitational/teleport/lib/auth/client"
 	"github.com/gravitational/teleport/lib/auth/server"
@@ -88,8 +87,8 @@ type SrvSuite struct {
 const teleportTestUser = "teleport-test"
 
 // wildcardAllow is used in tests to allow access to all labels.
-var wildcardAllow = types.Labels{
-	types.Wildcard: []string{types.Wildcard},
+var wildcardAllow = services.Labels{
+	services.Wildcard: []string{services.Wildcard},
 }
 
 var _ = Suite(&SrvSuite{})
@@ -184,8 +183,8 @@ func (s *SrvSuite) SetUpTest(c *C) {
 		SetLabels(
 			map[string]string{"foo": "bar"},
 			services.CommandLabels{
-				"baz": &types.CommandLabelV2{
-					Period:  types.NewDuration(time.Millisecond),
+				"baz": &services.CommandLabelV2{
+					Period:  services.NewDuration(time.Millisecond),
 					Command: []string{"expr", "1", "+", "3"}},
 			},
 		),
@@ -307,7 +306,7 @@ func (s *SrvSuite) TestAgentForwardPermission(c *C) {
 	role, err := s.server.Auth().GetRole(roleName)
 	c.Assert(err, IsNil)
 	roleOptions := role.GetOptions()
-	roleOptions.ForwardAgent = types.NewBool(false)
+	roleOptions.ForwardAgent = services.NewBool(false)
 	role.SetOptions(roleOptions)
 	err = s.server.Auth().UpsertRole(ctx, role)
 	c.Assert(err, IsNil)
@@ -381,7 +380,7 @@ func (s *SrvSuite) TestAgentForward(c *C) {
 	role, err := s.server.Auth().GetRole(roleName)
 	c.Assert(err, IsNil)
 	roleOptions := role.GetOptions()
-	roleOptions.ForwardAgent = types.NewBool(true)
+	roleOptions.ForwardAgent = services.NewBool(true)
 	role.SetOptions(roleOptions)
 	err = s.server.Auth().UpsertRole(ctx, role)
 	c.Assert(err, IsNil)
@@ -494,27 +493,27 @@ func (s *SrvSuite) TestAllowedUsers(c *C) {
 
 func (s *SrvSuite) TestAllowedLabels(c *C) {
 	var tests = []struct {
-		inLabelMap types.Labels
+		inLabelMap services.Labels
 		outError   bool
 	}{
 		// Valid static label.
 		{
-			inLabelMap: types.Labels{"foo": []string{"bar"}},
+			inLabelMap: services.Labels{"foo": []string{"bar"}},
 			outError:   false,
 		},
 		// Invalid static label.
 		{
-			inLabelMap: types.Labels{"foo": []string{"baz"}},
+			inLabelMap: services.Labels{"foo": []string{"baz"}},
 			outError:   true,
 		},
 		// Valid dynamic label.
 		{
-			inLabelMap: types.Labels{"baz": []string{"4"}},
+			inLabelMap: services.Labels{"baz": []string{"4"}},
 			outError:   false,
 		},
 		// Invalid dynamic label.
 		{
-			inLabelMap: types.Labels{"baz": []string{"5"}},
+			inLabelMap: services.Labels{"baz": []string{"5"}},
 			outError:   true,
 		},
 	}
@@ -768,9 +767,9 @@ func (s *SrvSuite) TestProxyReverseTunnel(c *C) {
 	// Create a reverse tunnel and remote cluster simulating what the trusted
 	// cluster exchange does.
 	err = s.server.Auth().UpsertReverseTunnel(
-		types.NewReverseTunnel(s.server.ClusterName(), []string{reverseTunnelAddress.String()}))
+		services.NewReverseTunnel(s.server.ClusterName(), []string{reverseTunnelAddress.String()}))
 	c.Assert(err, IsNil)
-	remoteCluster, err := types.NewRemoteCluster("localhost")
+	remoteCluster, err := services.NewRemoteCluster("localhost")
 	c.Assert(err, IsNil)
 	err = s.server.Auth().CreateRemoteCluster(remoteCluster)
 	c.Assert(err, IsNil)
@@ -807,11 +806,11 @@ func (s *SrvSuite) TestProxyReverseTunnel(c *C) {
 		SetLabels(
 			map[string]string{"label1": "value1"},
 			services.CommandLabels{
-				"cmdLabel1": &types.CommandLabelV2{
-					Period:  types.NewDuration(time.Millisecond),
+				"cmdLabel1": &services.CommandLabelV2{
+					Period:  services.NewDuration(time.Millisecond),
 					Command: []string{"expr", "1", "+", "3"}},
-				"cmdLabel2": &types.CommandLabelV2{
-					Period:  types.NewDuration(time.Second * 2),
+				"cmdLabel2": &services.CommandLabelV2{
+					Period:  services.NewDuration(time.Second * 2),
 					Command: []string{"expr", "2", "+", "3"}},
 			},
 		),
@@ -852,7 +851,7 @@ func (s *SrvSuite) TestProxyReverseTunnel(c *C) {
 	// request "list of sites":
 	c.Assert(se3.RequestSubsystem("proxysites"), IsNil)
 	<-done
-	var sites []types.Site
+	var sites []services.Site
 	c.Assert(json.Unmarshal(stdout.Bytes(), &sites), IsNil)
 	c.Assert(sites, NotNil)
 	c.Assert(sites, HasLen, 2)
@@ -1206,8 +1205,8 @@ func (s *SrvSuite) TestServerAliveInterval(c *C) {
 // recording-proxy@teleport.com request.
 func (s *SrvSuite) TestGlobalRequestRecordingProxy(c *C) {
 	// set cluster config to record at the node
-	clusterConfig, err := types.NewClusterConfig(types.ClusterConfigSpecV3{
-		SessionRecording: types.RecordAtNode,
+	clusterConfig, err := services.NewClusterConfig(services.ClusterConfigSpecV3{
+		SessionRecording: services.RecordAtNode,
 	})
 	c.Assert(err, IsNil)
 	err = s.server.Auth().SetClusterConfig(clusterConfig)
@@ -1223,8 +1222,8 @@ func (s *SrvSuite) TestGlobalRequestRecordingProxy(c *C) {
 	c.Assert(response, Equals, false)
 
 	// set cluster config to record at the proxy
-	clusterConfig, err = types.NewClusterConfig(types.ClusterConfigSpecV3{
-		SessionRecording: types.RecordAtProxy,
+	clusterConfig, err = services.NewClusterConfig(services.ClusterConfigSpecV3{
+		SessionRecording: services.RecordAtProxy,
 	})
 	c.Assert(err, IsNil)
 	err = s.server.Auth().SetClusterConfig(clusterConfig)
@@ -1380,8 +1379,8 @@ func (s *SrvSuite) startX11EchoServer(ctx context.Context, c *C) *rawNode {
 // X11 request/channels.
 func (s *SrvSuite) TestX11ProxySupport(c *C) {
 	// set cluster config to record at the proxy
-	clusterConfig, err := types.NewClusterConfig(types.ClusterConfigSpecV3{
-		SessionRecording: types.RecordAtProxy,
+	clusterConfig, err := services.NewClusterConfig(services.ClusterConfigSpecV3{
+		SessionRecording: services.RecordAtProxy,
 	})
 	c.Assert(err, IsNil)
 	err = s.server.Auth().SetClusterConfig(clusterConfig)
@@ -1481,26 +1480,26 @@ type upack struct {
 	certSigner ssh.Signer
 }
 
-func (s *SrvSuite) newUpack(username string, allowedLogins []string, allowedLabels types.Labels) (*upack, error) {
+func (s *SrvSuite) newUpack(username string, allowedLogins []string, allowedLabels services.Labels) (*upack, error) {
 	ctx := context.Background()
 	authServer := s.server.Auth()
 	upriv, upub, err := authServer.GenerateKeyPair("")
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	user, err := types.NewUser(username)
+	user, err := services.NewUser(username)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
 	role := auth.RoleForUser(user)
-	rules := role.GetRules(types.Allow)
-	rules = append(rules, types.NewRule(types.Wildcard, auth.RW()))
-	role.SetRules(types.Allow, rules)
+	rules := role.GetRules(services.Allow)
+	rules = append(rules, services.NewRule(services.Wildcard, auth.RW()))
+	role.SetRules(services.Allow, rules)
 	opts := role.GetOptions()
-	opts.PermitX11Forwarding = types.NewBool(true)
+	opts.PermitX11Forwarding = services.NewBool(true)
 	role.SetOptions(opts)
-	role.SetLogins(types.Allow, allowedLogins)
-	role.SetNodeLabels(types.Allow, allowedLabels)
+	role.SetLogins(services.Allow, allowedLogins)
+	role.SetNodeLabels(services.Allow, allowedLabels)
 	err = authServer.UpsertRole(ctx, role)
 	if err != nil {
 		return nil, trace.Wrap(err)

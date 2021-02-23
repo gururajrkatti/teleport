@@ -31,20 +31,22 @@ import (
 	"github.com/gravitational/teleport/lib/auth"
 	"github.com/gravitational/teleport/lib/defaults"
 	"github.com/gravitational/teleport/lib/events"
+	"github.com/gravitational/teleport/lib/services"
 	"github.com/gravitational/teleport/lib/tlsca"
 	"github.com/gravitational/teleport/lib/utils"
-	"github.com/jonboulle/clockwork"
+
+	"github.com/gravitational/trace"
 
 	"github.com/beevik/etree"
-	"github.com/gravitational/trace"
+	"github.com/jonboulle/clockwork"
 	saml2 "github.com/russellhaering/gosaml2"
 	samltypes "github.com/russellhaering/gosaml2/types"
 	dsig "github.com/russellhaering/goxmldsig"
 )
 
 // UpsertSAMLConnector creates or updates a SAML connector.
-func (a *Server) UpsertSAMLConnector(ctx context.Context, connector types.SAMLConnector) error {
-	if err := a.Services.Identity.UpsertSAMLConnector(connector); err != nil {
+func (a *Server) UpsertSAMLConnector(ctx context.Context, connector services.SAMLConnector) error {
+	if err := a.Identity.UpsertSAMLConnector(connector); err != nil {
 		return trace.Wrap(err)
 	}
 	if err := a.emitter.EmitAuditEvent(ctx, &events.OIDCConnectorCreate{
@@ -67,7 +69,7 @@ func (a *Server) UpsertSAMLConnector(ctx context.Context, connector types.SAMLCo
 
 // DeleteSAMLConnector deletes a SAML connector by name.
 func (a *Server) DeleteSAMLConnector(ctx context.Context, connectorName string) error {
-	if err := a.Services.Identity.DeleteSAMLConnector(connectorName); err != nil {
+	if err := a.Identity.DeleteSAMLConnector(connectorName); err != nil {
 		return trace.Wrap(err)
 	}
 	if err := a.emitter.EmitAuditEvent(ctx, &events.OIDCConnectorDelete{
@@ -89,7 +91,7 @@ func (a *Server) DeleteSAMLConnector(ctx context.Context, connectorName string) 
 }
 
 func (a *Server) CreateSAMLAuthRequest(req auth.SAMLAuthRequest) (*auth.SAMLAuthRequest, error) {
-	connector, err := a.Services.Identity.GetSAMLConnector(req.ConnectorID, true)
+	connector, err := a.Identity.GetSAMLConnector(req.ConnectorID, true)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -114,14 +116,14 @@ func (a *Server) CreateSAMLAuthRequest(req auth.SAMLAuthRequest) (*auth.SAMLAuth
 		return nil, trace.Wrap(err)
 	}
 
-	err = a.Services.Identity.CreateSAMLAuthRequest(req, defaults.SAMLAuthRequestTTL)
+	err = a.Identity.CreateSAMLAuthRequest(req, defaults.SAMLAuthRequestTTL)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
 	return &req, nil
 }
 
-func (a *Server) getSAMLProvider(conn types.SAMLConnector) (*saml2.SAMLServiceProvider, error) {
+func (a *Server) getSAMLProvider(conn services.SAMLConnector) (*saml2.SAMLServiceProvider, error) {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 
@@ -141,7 +143,7 @@ func (a *Server) getSAMLProvider(conn types.SAMLConnector) (*saml2.SAMLServicePr
 	return serviceProvider, nil
 }
 
-func (a *Server) calculateSAMLUser(connector types.SAMLConnector, assertionInfo saml2.AssertionInfo, request *auth.SAMLAuthRequest) (*createUserParams, error) {
+func (a *Server) calculateSAMLUser(connector services.SAMLConnector, assertionInfo saml2.AssertionInfo, request *auth.SAMLAuthRequest) (*createUserParams, error) {
 	var err error
 
 	p := createUserParams{
@@ -157,7 +159,7 @@ func (a *Server) calculateSAMLUser(connector types.SAMLConnector, assertionInfo 
 	}
 
 	// Pick smaller for role: session TTL from role or requested TTL.
-	roles, err := auth.FetchRoles(p.roles, a.Services.Access, p.traits)
+	roles, err := auth.FetchRoles(p.roles, a.Access, p.traits)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -167,34 +169,34 @@ func (a *Server) calculateSAMLUser(connector types.SAMLConnector, assertionInfo 
 	return &p, nil
 }
 
-func (a *Server) createSAMLUser(p *createUserParams) (types.User, error) {
+func (a *Server) createSAMLUser(p *createUserParams) (services.User, error) {
 	expires := a.GetClock().Now().UTC().Add(p.sessionTTL)
 
 	log.Debugf("Generating dynamic SAML identity %v/%v with roles: %v.", p.connectorName, p.username, p.roles)
 
-	user := &types.UserV2{
-		Kind:    types.KindUser,
-		Version: types.V2,
-		Metadata: types.Metadata{
+	user := &services.UserV2{
+		Kind:    services.KindUser,
+		Version: services.V2,
+		Metadata: services.Metadata{
 			Name:      p.username,
 			Namespace: defaults.Namespace,
 			Expires:   &expires,
 		},
-		Spec: types.UserSpecV2{
+		Spec: services.UserSpecV2{
 			Roles:  p.roles,
 			Traits: p.traits,
-			SAMLIdentities: []types.ExternalIdentity{
+			SAMLIdentities: []services.ExternalIdentity{
 				{
 					ConnectorID: p.connectorName,
 					Username:    p.username,
 				},
 			},
-			CreatedBy: types.CreatedBy{
-				User: types.UserRef{
+			CreatedBy: services.CreatedBy{
+				User: services.UserRef{
 					Name: teleport.UserSystem,
 				},
 				Time: a.clock.Now().UTC(),
-				Connector: &types.ConnectorRef{
+				Connector: &services.ConnectorRef{
 					Type:     teleport.SAML,
 					ID:       p.connectorName,
 					Identity: p.username,
@@ -204,7 +206,7 @@ func (a *Server) createSAMLUser(p *createUserParams) (types.User, error) {
 	}
 
 	// Get the user to check if it already exists or not.
-	existingUser, err := a.Services.Identity.GetUser(p.username, false)
+	existingUser, err := a.Identity.GetUser(p.username, false)
 	if err != nil && !trace.IsNotFound(err) {
 		return nil, trace.Wrap(err)
 	}
@@ -282,9 +284,9 @@ type SAMLAuthResponse struct {
 	// Username is an authenticated teleport username
 	Username string `json:"username"`
 	// Identity contains validated SAML identity
-	Identity types.ExternalIdentity `json:"identity"`
+	Identity services.ExternalIdentity `json:"identity"`
 	// Web session will be generated by auth server if requested in SAMLAuthRequest
-	Session types.WebSession `json:"session,omitempty"`
+	Session services.WebSession `json:"session,omitempty"`
 	// Cert will be generated by certificate authority
 	Cert []byte `json:"cert,omitempty"`
 	// TLSCert is a PEM encoded TLS certificate
@@ -293,7 +295,7 @@ type SAMLAuthResponse struct {
 	Req auth.SAMLAuthRequest `json:"req"`
 	// HostSigners is a list of signing host public keys
 	// trusted by proxy, used in console login
-	HostSigners []types.CertAuthority `json:"host_signers"`
+	HostSigners []services.CertAuthority `json:"host_signers"`
 }
 
 // ValidateSAMLResponse consumes attribute statements from SAML identity provider
@@ -342,11 +344,11 @@ func (a *Server) validateSAMLResponse(samlResponse string) (*samlAuthResponse, e
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	request, err := a.Services.Identity.GetSAMLAuthRequest(requestID)
+	request, err := a.Identity.GetSAMLAuthRequest(requestID)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	connector, err := a.Services.Identity.GetSAMLConnector(request.ConnectorID, true)
+	connector, err := a.Identity.GetSAMLConnector(request.ConnectorID, true)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -402,7 +404,7 @@ func (a *Server) validateSAMLResponse(samlResponse string) (*samlAuthResponse, e
 	// Auth was successful, return session, certificate, etc. to caller.
 	re.auth = SAMLAuthResponse{
 		Req: *request,
-		Identity: types.ExternalIdentity{
+		Identity: services.ExternalIdentity{
 			ConnectorID: params.connectorName,
 			Username:    params.username,
 		},
@@ -438,8 +440,8 @@ func (a *Server) validateSAMLResponse(samlResponse string) (*samlAuthResponse, e
 		re.auth.TLSCert = tlsCert
 
 		// Return the host CA for this cluster only.
-		authority, err := a.GetCertAuthority(types.CertAuthID{
-			Type:       types.HostCA,
+		authority, err := a.GetCertAuthority(services.CertAuthID{
+			Type:       services.HostCA,
 			DomainName: clusterName.GetClusterName(),
 		}, false)
 		if err != nil {

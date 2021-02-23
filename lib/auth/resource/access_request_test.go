@@ -19,16 +19,15 @@ package resource
 import (
 	"testing"
 
-	"github.com/gravitational/teleport/api/types"
+	"github.com/gravitational/teleport/lib/auth"
 
-	"github.com/pborman/uuid"
 	"github.com/stretchr/testify/require"
 )
 
 // TestAccessRequestMarshaling verifies that marshaling/unmarshaling access requests
 // works as expected (failures likely indicate a problem with json schema).
 func TestAccessRequestMarshaling(t *testing.T) {
-	req1, err := types.NewAccessRequest(uuid.New(), "some-user", "role-1", "role-2")
+	req1, err := auth.NewAccessRequest("some-user", "role-1", "role-2")
 	require.NoError(t, err)
 
 	marshaled, err := MarshalAccessRequest(req1)

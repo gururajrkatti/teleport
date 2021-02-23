@@ -1559,7 +1559,7 @@ func (h *Handler) getSiteNamespaces(w http.ResponseWriter, r *http.Request, _ ht
 
 func (h *Handler) siteNodesGet(w http.ResponseWriter, r *http.Request, p httprouter.Params, ctx *SessionContext, site reversetunnel.RemoteSite) (interface{}, error) {
 	namespace := p.ByName("namespace")
-	if !types.IsValidNamespace(namespace) {
+	if !services.IsValidNamespace(namespace) {
 		return nil, trace.BadParameter("invalid namespace %q", namespace)
 	}
 
@@ -1599,7 +1599,7 @@ func (h *Handler) siteNodeConnect(
 	site reversetunnel.RemoteSite) (interface{}, error) {
 
 	namespace := p.ByName("namespace")
-	if !types.IsValidNamespace(namespace) {
+	if !services.IsValidNamespace(namespace) {
 		return nil, trace.BadParameter("invalid namespace %q", namespace)
 	}
 
@@ -1668,7 +1668,7 @@ func (h *Handler) siteSessionGenerate(w http.ResponseWriter, r *http.Request, p 
 	}
 
 	namespace := p.ByName("namespace")
-	if !types.IsValidNamespace(namespace) {
+	if !services.IsValidNamespace(namespace) {
 		return nil, trace.BadParameter("invalid namespace %q", namespace)
 	}
 
@@ -1718,7 +1718,7 @@ func (h *Handler) siteSessionsGet(w http.ResponseWriter, r *http.Request, p http
 	}
 
 	namespace := p.ByName("namespace")
-	if !types.IsValidNamespace(namespace) {
+	if !services.IsValidNamespace(namespace) {
 		return nil, trace.BadParameter("invalid namespace %q", namespace)
 	}
 
@@ -1764,7 +1764,7 @@ func (h *Handler) siteSessionGet(w http.ResponseWriter, r *http.Request, p httpr
 	}
 
 	namespace := p.ByName("namespace")
-	if !types.IsValidNamespace(namespace) {
+	if !services.IsValidNamespace(namespace) {
 		return nil, trace.BadParameter("invalid namespace %q", namespace)
 	}
 
@@ -1983,7 +1983,7 @@ func (h *Handler) siteSessionStreamGet(w http.ResponseWriter, r *http.Request, p
 		max = maxStreamBytes
 	}
 	namespace := p.ByName("namespace")
-	if !types.IsValidNamespace(namespace) {
+	if !services.IsValidNamespace(namespace) {
 		onError(trace.BadParameter("invalid namespace %q", namespace))
 		return
 	}
@@ -2043,7 +2043,7 @@ func (h *Handler) siteSessionEventsGet(w http.ResponseWriter, r *http.Request, p
 		afterN = 0
 	}
 	namespace := p.ByName("namespace")
-	if !types.IsValidNamespace(namespace) {
+	if !services.IsValidNamespace(namespace) {
 		return nil, trace.BadParameter("invalid namespace %q", namespace)
 	}
 	e, err := clt.GetSessionEvents(namespace, *sessionID, afterN, true)

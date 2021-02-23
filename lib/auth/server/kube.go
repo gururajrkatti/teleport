@@ -20,10 +20,10 @@ import (
 	"time"
 
 	"github.com/gravitational/teleport"
-	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib/auth"
 	"github.com/gravitational/teleport/lib/defaults"
 	"github.com/gravitational/teleport/lib/modules"
+	"github.com/gravitational/teleport/lib/services"
 	"github.com/gravitational/teleport/lib/tlsca"
 
 	"github.com/gravitational/trace"
@@ -79,8 +79,8 @@ func (s *Server) ProcessKubeCSR(req KubeCSR) (*KubeCSRResponse, error) {
 	// with special provisions.
 	log.Debugf("Generating certificate to access remote Kubernetes clusters.")
 
-	hostCA, err := s.GetCertAuthority(types.CertAuthID{
-		Type:       types.HostCA,
+	hostCA, err := s.GetCertAuthority(services.CertAuthID{
+		Type:       services.HostCA,
 		DomainName: req.ClusterName,
 	}, false)
 	if err != nil {
@@ -114,8 +114,8 @@ func (s *Server) ProcessKubeCSR(req KubeCSR) (*KubeCSRResponse, error) {
 	// Get the correct cert TTL based on roles.
 	ttl := roles.AdjustSessionTTL(defaults.CertDuration)
 
-	userCA, err := s.Services.Trust.GetCertAuthority(types.CertAuthID{
-		Type:       types.UserCA,
+	userCA, err := s.Trust.GetCertAuthority(services.CertAuthID{
+		Type:       services.UserCA,
 		DomainName: clusterName.GetClusterName(),
 	}, true)
 	if err != nil {

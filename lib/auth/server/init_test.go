@@ -40,6 +40,7 @@ import (
 	"github.com/gravitational/teleport/lib/backend"
 	"github.com/gravitational/teleport/lib/backend/lite"
 	"github.com/gravitational/teleport/lib/defaults"
+	"github.com/gravitational/teleport/lib/services"
 	"github.com/gravitational/teleport/lib/sshutils"
 
 	"github.com/google/go-cmp/cmp"
@@ -164,23 +165,23 @@ func TestAuthPreference(t *testing.T) {
 	bk, err := lite.New(context.TODO(), backend.Params{"path": tempDir})
 	require.NoError(t, err)
 
-	ap, err := types.NewAuthPreference(types.AuthPreferenceSpecV2{
+	ap, err := services.NewAuthPreference(services.AuthPreferenceSpecV2{
 		Type:         "local",
 		SecondFactor: "u2f",
-		U2F: &types.U2F{
+		U2F: &services.U2F{
 			AppID:  "foo",
 			Facets: []string{"bar", "baz"},
 		},
 	})
 	require.NoError(t, err)
 
-	clusterName, err := types.NewClusterName(types.ClusterNameSpecV2{
+	clusterName, err := services.NewClusterName(services.ClusterNameSpecV2{
 		ClusterName: "me.localhost",
 	})
 	require.NoError(t, err)
 
-	staticTokens, err := types.NewStaticTokens(types.StaticTokensSpecV2{
-		StaticTokens: []types.ProvisionTokenV1{},
+	staticTokens, err := services.NewStaticTokens(services.StaticTokensSpecV2{
+		StaticTokens: []services.ProvisionTokenV1{},
 	})
 	require.NoError(t, err)
 
@@ -216,12 +217,12 @@ func TestClusterID(t *testing.T) {
 	bk, err := lite.New(context.TODO(), backend.Params{"path": tempDir})
 	require.NoError(t, err)
 
-	clusterName, err := types.NewClusterName(types.ClusterNameSpecV2{
+	clusterName, err := services.NewClusterName(services.ClusterNameSpecV2{
 		ClusterName: "me.localhost",
 	})
 	require.NoError(t, err)
 
-	authPreference, err := types.NewAuthPreference(types.AuthPreferenceSpecV2{
+	authPreference, err := services.NewAuthPreference(services.AuthPreferenceSpecV2{
 		Type: "local",
 	})
 	require.NoError(t, err)
@@ -270,12 +271,12 @@ func TestClusterName(t *testing.T) {
 	bk, err := lite.New(context.TODO(), backend.Params{"path": t.TempDir()})
 	require.NoError(t, err)
 
-	clusterName, err := types.NewClusterName(types.ClusterNameSpecV2{
+	clusterName, err := services.NewClusterName(services.ClusterNameSpecV2{
 		ClusterName: "me.localhost",
 	})
 	require.NoError(t, err)
 
-	authPreference, err := types.NewAuthPreference(types.AuthPreferenceSpecV2{
+	authPreference, err := services.NewAuthPreference(services.AuthPreferenceSpecV2{
 		Type: "local",
 	})
 	require.NoError(t, err)
@@ -296,7 +297,7 @@ func TestClusterName(t *testing.T) {
 
 	// Start the auth server with a different cluster name. The auth server
 	// should start, but with the original name.
-	clusterName, err = types.NewClusterName(types.ClusterNameSpecV2{
+	clusterName, err = services.NewClusterName(services.ClusterNameSpecV2{
 		ClusterName: "dev.localhost",
 	})
 	require.NoError(t, err)
@@ -324,12 +325,12 @@ func TestCASigningAlg(t *testing.T) {
 	bk, err := lite.New(context.TODO(), backend.Params{"path": t.TempDir()})
 	require.NoError(t, err)
 
-	clusterName, err := types.NewClusterName(types.ClusterNameSpecV2{
+	clusterName, err := services.NewClusterName(services.ClusterNameSpecV2{
 		ClusterName: "me.localhost",
 	})
 	require.NoError(t, err)
 
-	authPreference, err := types.NewAuthPreference(types.AuthPreferenceSpecV2{
+	authPreference, err := services.NewAuthPreference(services.AuthPreferenceSpecV2{
 		Type: "local",
 	})
 	require.NoError(t, err)
@@ -347,12 +348,12 @@ func TestCASigningAlg(t *testing.T) {
 	}
 
 	verifyCAs := func(auth *Server, alg string) {
-		hostCAs, err := auth.GetCertAuthorities(types.HostCA, false)
+		hostCAs, err := auth.GetCertAuthorities(services.HostCA, false)
 		require.NoError(t, err)
 		for _, ca := range hostCAs {
 			require.Equal(t, sshutils.GetSigningAlgName(ca), alg)
 		}
-		userCAs, err := auth.GetCertAuthorities(types.UserCA, false)
+		userCAs, err := auth.GetCertAuthorities(services.UserCA, false)
 		require.NoError(t, err)
 		for _, ca := range userCAs {
 			require.Equal(t, sshutils.GetSigningAlgName(ca), alg)
@@ -421,7 +422,7 @@ func TestMigrateMFADevices(t *testing.T) {
 			)),
 		},
 	} {
-		u, err := types.NewUser(name)
+		u, err := services.NewUser(name)
 		require.NoError(t, err)
 		// Set a fake but valid bcrypt password hash.
 		u.SetLocalAuth(&types.LocalAuthSecrets{PasswordHash: fakePasswordHash})
@@ -443,7 +444,7 @@ func TestMigrateMFADevices(t *testing.T) {
 		require.NoError(t, err)
 		return []*types.MFADevice{d}
 	}
-	wantUsers := []types.User{
+	wantUsers := []services.User{
 		newUserWithAuth(t, "no-mfa-user", &types.LocalAuthSecrets{PasswordHash: fakePasswordHash}),
 		newUserWithAuth(t, "totp-user", &types.LocalAuthSecrets{
 			PasswordHash: fakePasswordHash,
@@ -493,7 +494,7 @@ func TestMigrateOSS(t *testing.T) {
 		as.SetClock(clock)
 
 		// create non-migrated admin role
-		err := as.CreateRole(services.NewAdminRole())
+		err := as.CreateRole(auth.NewAdminRole())
 		require.NoError(t, err)
 
 		err = migrateOSS(ctx, as)
@@ -515,7 +516,7 @@ func TestMigrateOSS(t *testing.T) {
 		as.SetClock(clock)
 
 		// create non-migrated admin role to kick off migration
-		err := as.CreateRole(services.NewAdminRole())
+		err := as.CreateRole(auth.NewAdminRole())
 		require.NoError(t, err)
 
 		user, _, err := test.CreateUserAndRole(as, "alice", []string{"alice"})
@@ -540,7 +541,7 @@ func TestMigrateOSS(t *testing.T) {
 		as.SetClock(clock)
 
 		// create non-migrated admin role to kick off migration
-		err := as.CreateRole(services.NewAdminRole())
+		err := as.CreateRole(auth.NewAdminRole())
 		require.NoError(t, err)
 
 		foo, err := services.NewTrustedCluster("foo", services.TrustedClusterSpecV2{
@@ -561,7 +562,7 @@ func TestMigrateOSS(t *testing.T) {
 		require.NoError(t, err)
 
 		for _, name := range []string{clusterName, foo.GetName()} {
-			for _, catype := range []types.CertAuthType{types.UserCA, types.HostCA} {
+			for _, catype := range []services.CertAuthType{services.UserCA, services.HostCA} {
 				causer := test.NewCA(catype, name)
 				err = as.UpsertCertAuthority(causer)
 				require.NoError(t, err)
@@ -576,16 +577,16 @@ func TestMigrateOSS(t *testing.T) {
 		mapping := types.RoleMap{{Remote: teleport.AdminRoleName, Local: []string{teleport.AdminRoleName}}}
 		require.Equal(t, mapping, out.GetRoleMap())
 
-		for _, catype := range []types.CertAuthType{types.UserCA, types.HostCA} {
-			ca, err := as.GetCertAuthority(types.CertAuthID{Type: catype, DomainName: foo.GetName()}, true)
+		for _, catype := range []services.CertAuthType{services.UserCA, services.HostCA} {
+			ca, err := as.GetCertAuthority(services.CertAuthID{Type: catype, DomainName: foo.GetName()}, true)
 			require.NoError(t, err)
 			require.Equal(t, mapping, ca.GetRoleMap())
 			require.Equal(t, types.True, ca.GetMetadata().Labels[teleport.OSSMigratedV6])
 		}
 
 		// root cluster CA are not updated
-		for _, catype := range []types.CertAuthType{types.UserCA, types.HostCA} {
-			ca, err := as.GetCertAuthority(types.CertAuthID{Type: catype, DomainName: clusterName}, true)
+		for _, catype := range []services.CertAuthType{services.UserCA, services.HostCA} {
+			ca, err := as.GetCertAuthority(services.CertAuthID{Type: catype, DomainName: clusterName}, true)
 			require.NoError(t, err)
 			_, found := ca.GetMetadata().Labels[teleport.OSSMigratedV6]
 			require.False(t, found)
@@ -601,7 +602,7 @@ func TestMigrateOSS(t *testing.T) {
 		as.SetClock(clock)
 
 		// create non-migrated admin role to kick off migration
-		err := as.CreateRole(services.NewAdminRole())
+		err := as.CreateRole(auth.NewAdminRole())
 		require.NoError(t, err)
 
 		connector := types.NewGithubConnector("github", types.GithubConnectorSpecV3{
@@ -668,8 +669,8 @@ func TestMigrateOSS(t *testing.T) {
 
 }
 
-func newUserWithAuth(t *testing.T, name string, auth *types.LocalAuthSecrets) types.User {
-	u, err := types.NewUser(name)
+func newUserWithAuth(t *testing.T, name string, auth *types.LocalAuthSecrets) services.User {
+	u, err := services.NewUser(name)
 	require.NoError(t, err)
 	u.SetLocalAuth(auth)
 	return u

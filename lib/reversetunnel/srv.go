@@ -701,7 +701,7 @@ func (s *server) findLocalCluster(sconn *ssh.ServerConn) (*localSite, error) {
 	return nil, trace.BadParameter("local cluster %v not found", clusterName)
 }
 
-func (s *server) getTrustedCAKeysByID(id types.CertAuthID) ([]ssh.PublicKey, error) {
+func (s *server) getTrustedCAKeysByID(id services.CertAuthID) ([]ssh.PublicKey, error) {
 	ca, err := s.localAccessPoint.GetCertAuthority(id, false, resource.SkipValidation())
 	if err != nil {
 		return nil, trace.Wrap(err)

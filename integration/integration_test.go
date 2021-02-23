@@ -43,7 +43,6 @@ import (
 	"golang.org/x/crypto/ssh"
 
 	"github.com/gravitational/teleport"
-	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib"
 	"github.com/gravitational/teleport/lib/auth"
 	authclient "github.com/gravitational/teleport/lib/auth/client"
@@ -1925,7 +1924,7 @@ func (s *IntSuite) trustedClusters(c *check.C, test trustedClusterTest) {
 	// Otherwise, to preserve backwards-compatibility
 	// roles with no labels will grant access to clusters with no labels.
 	if test.useLabels {
-		devsRole.SetClusterLabels(types.Allow, services.Labels{"access": []string{"prod"}})
+		devsRole.SetClusterLabels(services.Allow, services.Labels{"access": []string{"prod"}})
 	}
 	c.Assert(err, check.IsNil)
 

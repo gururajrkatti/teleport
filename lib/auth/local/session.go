@@ -22,6 +22,7 @@ import (
 	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib/auth/resource"
 	"github.com/gravitational/teleport/lib/backend"
+	"github.com/gravitational/teleport/lib/services"
 
 	"github.com/gravitational/trace"
 	"github.com/sirupsen/logrus"
@@ -64,7 +65,7 @@ func (s *IdentityService) GetAppSessions(ctx context.Context) ([]types.WebSessio
 }
 
 // UpsertAppSession creates an application web session.
-func (s *IdentityService) UpsertAppSession(ctx context.Context, session types.WebSession) error {
+func (s *IdentityService) UpsertAppSession(ctx context.Context, session services.WebSession) error {
 	value, err := resource.MarshalWebSession(session)
 	if err != nil {
 		return trace.Wrap(err)
@@ -82,7 +83,7 @@ func (s *IdentityService) UpsertAppSession(ctx context.Context, session types.We
 }
 
 // DeleteAppSession removes an application web session.
-func (s *IdentityService) DeleteAppSession(ctx context.Context, req types.DeleteAppSessionRequest) error {
+func (s *IdentityService) DeleteAppSession(ctx context.Context, req services.DeleteAppSessionRequest) error {
 	if err := s.Delete(ctx, backend.Key(appsPrefix, sessionsPrefix, req.SessionID)); err != nil {
 		return trace.Wrap(err)
 	}
@@ -251,7 +252,7 @@ func (r *webTokens) List(ctx context.Context) (out []types.WebToken, err error) 
 
 // Upsert updates the existing or inserts a new web token.
 func (r *webTokens) Upsert(ctx context.Context, token types.WebToken) error {
-	bytes, err := resource.MarshalWebToken(token, resource.WithVersion(types.V3))
+	bytes, err := resource.MarshalWebToken(token, resource.WithVersion(services.V3))
 	if err != nil {
 		return trace.Wrap(err)
 	}

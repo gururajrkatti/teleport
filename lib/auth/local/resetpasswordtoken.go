@@ -20,22 +20,22 @@ import (
 	"bytes"
 	"context"
 
-	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib/auth/resource"
 	"github.com/gravitational/teleport/lib/backend"
+	"github.com/gravitational/teleport/lib/services"
 
 	"github.com/gravitational/trace"
 )
 
 // GetResetPasswordTokens returns all ResetPasswordTokens
-func (s *IdentityService) GetResetPasswordTokens(ctx context.Context) ([]types.ResetPasswordToken, error) {
+func (s *IdentityService) GetResetPasswordTokens(ctx context.Context) ([]services.ResetPasswordToken, error) {
 	startKey := backend.Key(passwordTokensPrefix)
 	result, err := s.GetRange(ctx, startKey, backend.RangeEnd(startKey), backend.NoLimit)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
 
-	var tokens []types.ResetPasswordToken
+	var tokens []services.ResetPasswordToken
 	for _, item := range result.Items {
 		if !bytes.HasSuffix(item.Key, []byte(paramsPrefix)) {
 			continue
@@ -65,7 +65,7 @@ func (s *IdentityService) DeleteResetPasswordToken(ctx context.Context, tokenID 
 }
 
 // GetResetPasswordToken returns a token by its ID
-func (s *IdentityService) GetResetPasswordToken(ctx context.Context, tokenID string) (types.ResetPasswordToken, error) {
+func (s *IdentityService) GetResetPasswordToken(ctx context.Context, tokenID string) (services.ResetPasswordToken, error) {
 	item, err := s.Get(ctx, backend.Key(passwordTokensPrefix, tokenID, paramsPrefix))
 	if err != nil {
 		if trace.IsNotFound(err) {
@@ -83,7 +83,7 @@ func (s *IdentityService) GetResetPasswordToken(ctx context.Context, tokenID str
 }
 
 // CreateResetPasswordToken creates a token that is used for signups and resets
-func (s *IdentityService) CreateResetPasswordToken(ctx context.Context, token types.ResetPasswordToken) (types.ResetPasswordToken, error) {
+func (s *IdentityService) CreateResetPasswordToken(ctx context.Context, token services.ResetPasswordToken) (services.ResetPasswordToken, error) {
 	if err := token.CheckAndSetDefaults(); err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -107,7 +107,7 @@ func (s *IdentityService) CreateResetPasswordToken(ctx context.Context, token ty
 }
 
 // GetResetPasswordTokenSecrets returns token secrets
-func (s *IdentityService) GetResetPasswordTokenSecrets(ctx context.Context, tokenID string) (types.ResetPasswordTokenSecrets, error) {
+func (s *IdentityService) GetResetPasswordTokenSecrets(ctx context.Context, tokenID string) (services.ResetPasswordTokenSecrets, error) {
 	item, err := s.Get(ctx, backend.Key(passwordTokensPrefix, tokenID, secretsPrefix))
 	if err != nil {
 		if trace.IsNotFound(err) {
@@ -125,7 +125,7 @@ func (s *IdentityService) GetResetPasswordTokenSecrets(ctx context.Context, toke
 }
 
 // UpsertResetPasswordTokenSecrets upserts token secrets
-func (s *IdentityService) UpsertResetPasswordTokenSecrets(ctx context.Context, secrets types.ResetPasswordTokenSecrets) error {
+func (s *IdentityService) UpsertResetPasswordTokenSecrets(ctx context.Context, secrets services.ResetPasswordTokenSecrets) error {
 	if err := secrets.CheckAndSetDefaults(); err != nil {
 		return trace.Wrap(err)
 	}

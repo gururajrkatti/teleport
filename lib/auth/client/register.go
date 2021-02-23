@@ -22,14 +22,15 @@ import (
 
 	"github.com/gravitational/teleport"
 	"github.com/gravitational/teleport/api/client"
-	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib"
 	"github.com/gravitational/teleport/lib/auth/server"
 	"github.com/gravitational/teleport/lib/defaults"
+	"github.com/gravitational/teleport/lib/services"
 	"github.com/gravitational/teleport/lib/tlsca"
 	"github.com/gravitational/teleport/lib/utils"
 
 	"github.com/gravitational/trace"
+
 	"github.com/jonboulle/clockwork"
 	log "github.com/sirupsen/logrus"
 )
@@ -371,7 +372,7 @@ type ReRegisterParams struct {
 	// PublicSSHKey is a server's public SSH key to sign
 	PublicSSHKey []byte
 	// Rotation is the rotation state of the certificate authority
-	Rotation types.Rotation
+	Rotation services.Rotation
 }
 
 // ReRegister renews the certificates and private keys based on the client's existing identity.

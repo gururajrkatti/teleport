@@ -28,16 +28,14 @@ import (
 	"github.com/gravitational/kingpin"
 	"github.com/gravitational/teleport"
 	apiclient "github.com/gravitational/teleport/api/client"
-	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib/asciitable"
 	"github.com/gravitational/teleport/lib/auth"
 	"github.com/gravitational/teleport/lib/auth/client"
+	authclient "github.com/gravitational/teleport/lib/auth/client"
 	"github.com/gravitational/teleport/lib/service"
 	"github.com/gravitational/teleport/lib/services"
 
 	"github.com/gravitational/trace"
-
-	"github.com/pborman/uuid"
 )
 
 // AccessRequestCommand implements `tctl users` set of commands
@@ -211,12 +209,12 @@ func (c *AccessRequestCommand) Deny(client client.ClientI) error {
 	return nil
 }
 
-func (c *AccessRequestCommand) Create(client client.ClientI) error {
+func (c *AccessRequestCommand) Create(client authclient.ClientI) error {
 	roles := c.splitRoles()
 	if len(roles) == 0 {
 		return trace.BadParameter("need at least one role")
 	}
-	req, err := types.NewAccessRequest(uuid.New(), c.user, roles[0], roles[1:]...)
+	req, err := auth.NewAccessRequest(c.user, roles[0], roles[1:]...)
 	if err != nil {
 		return trace.Wrap(err)
 	}

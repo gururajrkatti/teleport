@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gravitational/teleport/api/types"
+	"github.com/gravitational/teleport/lib/services"
 	"github.com/gravitational/teleport/lib/utils"
 
 	"github.com/gravitational/trace"
@@ -64,7 +64,7 @@ func ValidateEvent(f EventFields, serverID string) error {
 	if f.HasField(SessionServerID) && f.GetString(SessionServerID) != serverID {
 		return trace.BadParameter("server ID %v not valid", f.GetString(SessionServerID))
 	}
-	if f.HasField(EventNamespace) && !types.IsValidNamespace(f.GetString(EventNamespace)) {
+	if f.HasField(EventNamespace) && !services.IsValidNamespace(f.GetString(EventNamespace)) {
 		return trace.BadParameter("invalid namespace %v", f.GetString(EventNamespace))
 	}
 

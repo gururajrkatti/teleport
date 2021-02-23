@@ -24,9 +24,9 @@ import (
 	"testing"
 
 	"github.com/gravitational/teleport"
-	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib/auth/resource"
 	"github.com/gravitational/teleport/lib/defaults"
+	"github.com/gravitational/teleport/lib/services"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/julienschmidt/httprouter"
@@ -40,61 +40,61 @@ func TestUpsertServer(t *testing.T) {
 	tests := []struct {
 		desc       string
 		role       teleport.Role
-		reqServer  types.Server
-		wantServer types.Server
+		reqServer  services.Server
+		wantServer services.Server
 		assertErr  require.ErrorAssertionFunc
 	}{
 		{
 			desc: "node",
-			reqServer: &types.ServerV2{
-				Metadata: types.Metadata{Name: "test-server", Namespace: defaults.Namespace},
-				Version:  types.V2,
-				Kind:     types.KindNode,
+			reqServer: &services.ServerV2{
+				Metadata: services.Metadata{Name: "test-server", Namespace: defaults.Namespace},
+				Version:  services.V2,
+				Kind:     services.KindNode,
 			},
 			role: teleport.RoleNode,
-			wantServer: &types.ServerV2{
-				Metadata: types.Metadata{Name: "test-server", Namespace: defaults.Namespace},
-				Version:  types.V2,
-				Kind:     types.KindNode,
+			wantServer: &services.ServerV2{
+				Metadata: services.Metadata{Name: "test-server", Namespace: defaults.Namespace},
+				Version:  services.V2,
+				Kind:     services.KindNode,
 			},
 			assertErr: require.NoError,
 		},
 		{
 			desc: "proxy",
-			reqServer: &types.ServerV2{
-				Metadata: types.Metadata{Name: "test-server", Namespace: defaults.Namespace},
-				Version:  types.V2,
-				Kind:     types.KindProxy,
+			reqServer: &services.ServerV2{
+				Metadata: services.Metadata{Name: "test-server", Namespace: defaults.Namespace},
+				Version:  services.V2,
+				Kind:     services.KindProxy,
 			},
 			role: teleport.RoleProxy,
-			wantServer: &types.ServerV2{
-				Metadata: types.Metadata{Name: "test-server", Namespace: defaults.Namespace},
-				Version:  types.V2,
-				Kind:     types.KindProxy,
+			wantServer: &services.ServerV2{
+				Metadata: services.Metadata{Name: "test-server", Namespace: defaults.Namespace},
+				Version:  services.V2,
+				Kind:     services.KindProxy,
 			},
 			assertErr: require.NoError,
 		},
 		{
 			desc: "auth",
-			reqServer: &types.ServerV2{
-				Metadata: types.Metadata{Name: "test-server", Namespace: defaults.Namespace},
-				Version:  types.V2,
-				Kind:     types.KindAuthServer,
+			reqServer: &services.ServerV2{
+				Metadata: services.Metadata{Name: "test-server", Namespace: defaults.Namespace},
+				Version:  services.V2,
+				Kind:     services.KindAuthServer,
 			},
 			role: teleport.RoleAuth,
-			wantServer: &types.ServerV2{
-				Metadata: types.Metadata{Name: "test-server", Namespace: defaults.Namespace},
-				Version:  types.V2,
-				Kind:     types.KindAuthServer,
+			wantServer: &services.ServerV2{
+				Metadata: services.Metadata{Name: "test-server", Namespace: defaults.Namespace},
+				Version:  services.V2,
+				Kind:     services.KindAuthServer,
 			},
 			assertErr: require.NoError,
 		},
 		{
 			desc: "unknown",
-			reqServer: &types.ServerV2{
-				Metadata: types.Metadata{Name: "test-server", Namespace: defaults.Namespace},
-				Version:  types.V2,
-				Kind:     types.KindNode,
+			reqServer: &services.ServerV2{
+				Metadata: services.Metadata{Name: "test-server", Namespace: defaults.Namespace},
+				Version:  services.V2,
+				Kind:     services.KindNode,
 			},
 			role:      teleport.Role("unknown"),
 			assertErr: require.Error,
@@ -122,15 +122,15 @@ func TestUpsertServer(t *testing.T) {
 			}
 
 			// Fetch all servers from the backend, there should only be 1.
-			var allServers []types.Server
-			addServers := func(servers []types.Server, err error) {
+			var allServers []services.Server
+			addServers := func(servers []services.Server, err error) {
 				require.NoError(t, err)
 				allServers = append(allServers, servers...)
 			}
 			addServers(s.GetAuthServers())
 			addServers(s.GetNodes(defaults.Namespace))
 			addServers(s.GetProxies())
-			require.Empty(t, cmp.Diff(allServers, []types.Server{tt.wantServer}))
+			require.Empty(t, cmp.Diff(allServers, []services.Server{tt.wantServer}))
 		})
 	}
 }

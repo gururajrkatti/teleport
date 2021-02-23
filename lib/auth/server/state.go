@@ -22,9 +22,9 @@ import (
 	"strings"
 
 	"github.com/gravitational/teleport"
-	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib/auth/resource"
 	"github.com/gravitational/teleport/lib/backend"
+	"github.com/gravitational/teleport/lib/services"
 	"github.com/gravitational/teleport/lib/utils"
 
 	"github.com/gravitational/trace"
@@ -135,10 +135,10 @@ func (p *ProcessStorage) ReadIdentity(name string, role teleport.Role) (*Identit
 // WriteIdentity writes identity to the backend.
 func (p *ProcessStorage) WriteIdentity(name string, id Identity) error {
 	res := IdentityV2{
-		ResourceHeader: types.ResourceHeader{
-			Kind:    types.KindIdentity,
-			Version: types.V2,
-			Metadata: types.Metadata{
+		ResourceHeader: services.ResourceHeader{
+			Kind:    services.KindIdentity,
+			Version: services.V2,
+			Metadata: services.Metadata{
 				Name: name,
 			},
 		},
@@ -168,15 +168,15 @@ func (p *ProcessStorage) WriteIdentity(name string, id Identity) error {
 // StateV2 is a local process state.
 type StateV2 struct {
 	// ResourceHeader is a common resource header.
-	types.ResourceHeader
+	services.ResourceHeader
 	// Spec is a process spec.
 	Spec StateSpecV2 `json:"spec"`
 }
 
 // CheckAndSetDefaults checks and sets defaults values.
 func (s *StateV2) CheckAndSetDefaults() error {
-	s.Kind = types.KindState
-	s.Version = types.V2
+	s.Kind = services.KindState
+	s.Version = services.V2
 	// for state resource name does not matter
 	if s.Metadata.Name == "" {
 		s.Metadata.Name = stateName
@@ -190,21 +190,21 @@ func (s *StateV2) CheckAndSetDefaults() error {
 // StateSpecV2 is a state spec.
 type StateSpecV2 struct {
 	// Rotation holds local process rotation state.
-	Rotation types.Rotation `json:"rotation"`
+	Rotation services.Rotation `json:"rotation"`
 }
 
 // IdentityV2 specifies local host identity.
 type IdentityV2 struct {
 	// ResourceHeader is a common resource header.
-	types.ResourceHeader
+	services.ResourceHeader
 	// Spec is the identity spec.
 	Spec IdentitySpecV2 `json:"spec"`
 }
 
 // CheckAndSetDefaults checks and sets defaults values.
 func (s *IdentityV2) CheckAndSetDefaults() error {
-	s.Kind = types.KindIdentity
-	s.Version = types.V2
+	s.Kind = services.KindIdentity
+	s.Version = services.V2
 	if err := s.Metadata.CheckAndSetDefaults(); err != nil {
 		return trace.Wrap(err)
 	}

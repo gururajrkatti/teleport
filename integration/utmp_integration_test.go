@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/gravitational/teleport"
-	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib/auth"
 	authclient "github.com/gravitational/teleport/lib/auth/client"
 	"github.com/gravitational/teleport/lib/auth/server"
@@ -50,8 +49,8 @@ import (
 const teleportTestUser = "teleport-test"
 
 // wildcardAllow is used in tests to allow access to all labels.
-var wildcardAllow = types.Labels{
-	types.Wildcard: []string{types.Wildcard},
+var wildcardAllow = services.Labels{
+	services.Wildcard: []string{services.Wildcard},
 }
 
 type SrvCtx struct {
@@ -226,8 +225,8 @@ func newSrvCtx(t *testing.T) *SrvCtx {
 		regular.SetLabels(
 			map[string]string{"foo": "bar"},
 			services.CommandLabels{
-				"baz": &types.CommandLabelV2{
-					Period:  types.NewDuration(time.Millisecond),
+				"baz": &services.CommandLabelV2{
+					Period:  services.NewDuration(time.Millisecond),
 					Command: []string{"expr", "1", "+", "3"}},
 			},
 		),
@@ -242,26 +241,26 @@ func newSrvCtx(t *testing.T) *SrvCtx {
 	return s
 }
 
-func newUpack(s *SrvCtx, username string, allowedLogins []string, allowedLabels types.Labels) (*upack, error) {
+func newUpack(s *SrvCtx, username string, allowedLogins []string, allowedLabels services.Labels) (*upack, error) {
 	ctx := context.Background()
 	authServer := s.server.Auth()
 	upriv, upub, err := authServer.GenerateKeyPair("")
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	user, err := types.NewUser(username)
+	user, err := services.NewUser(username)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
 	role := auth.RoleForUser(user)
-	rules := role.GetRules(types.Allow)
-	rules = append(rules, types.NewRule(types.Wildcard, auth.RW()))
-	role.SetRules(types.Allow, rules)
+	rules := role.GetRules(services.Allow)
+	rules = append(rules, services.NewRule(services.Wildcard, auth.RW()))
+	role.SetRules(services.Allow, rules)
 	opts := role.GetOptions()
-	opts.PermitX11Forwarding = types.NewBool(true)
+	opts.PermitX11Forwarding = services.NewBool(true)
 	role.SetOptions(opts)
-	role.SetLogins(types.Allow, allowedLogins)
-	role.SetNodeLabels(types.Allow, allowedLabels)
+	role.SetLogins(services.Allow, allowedLogins)
+	role.SetNodeLabels(services.Allow, allowedLabels)
 	err = authServer.UpsertRole(ctx, role)
 	if err != nil {
 		return nil, trace.Wrap(err)

@@ -34,7 +34,6 @@ import (
 	"time"
 
 	"github.com/gravitational/teleport"
-	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib"
 	"github.com/gravitational/teleport/lib/auth"
 	"github.com/gravitational/teleport/lib/auth/testauthority"
@@ -229,8 +228,8 @@ func (s *KubeSuite) TestKubeExec(c *check.C) {
 		kubeUsers:  kubeUsers,
 		kubeGroups: kubeGroups,
 		impersonation: &rest.ImpersonationConfig{
-			UserName: role.GetKubeUsers(types.Allow)[0],
-			Groups:   role.GetKubeGroups(types.Allow),
+			UserName: role.GetKubeUsers(services.Allow)[0],
+			Groups:   role.GetKubeGroups(services.Allow),
 		},
 	})
 	c.Assert(err, check.IsNil)

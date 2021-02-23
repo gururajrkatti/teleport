@@ -19,10 +19,10 @@ package local
 import (
 	"context"
 
-	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib/auth"
 	"github.com/gravitational/teleport/lib/auth/resource"
 	"github.com/gravitational/teleport/lib/backend"
+	"github.com/gravitational/teleport/lib/services"
 
 	"github.com/gravitational/trace"
 )
@@ -40,7 +40,7 @@ func NewClusterConfigurationService(backend backend.Backend) *ClusterConfigurati
 }
 
 // GetClusterName gets the name of the cluster from the backend.
-func (s *ClusterConfigurationService) GetClusterName(opts ...auth.MarshalOption) (types.ClusterName, error) {
+func (s *ClusterConfigurationService) GetClusterName(opts ...auth.MarshalOption) (services.ClusterName, error) {
 	item, err := s.Get(context.TODO(), backend.Key(clusterConfigPrefix, namePrefix))
 	if err != nil {
 		if trace.IsNotFound(err) {
@@ -52,7 +52,7 @@ func (s *ClusterConfigurationService) GetClusterName(opts ...auth.MarshalOption)
 		resource.AddOptions(opts, resource.WithResourceID(item.ID))...)
 }
 
-// DeleteClusterName deletes types.ClusterName from the backend.
+// DeleteClusterName deletes services.ClusterName from the backend.
 func (s *ClusterConfigurationService) DeleteClusterName() error {
 	err := s.Delete(context.TODO(), backend.Key(clusterConfigPrefix, namePrefix))
 	if err != nil {
@@ -66,7 +66,7 @@ func (s *ClusterConfigurationService) DeleteClusterName() error {
 
 // SetClusterName sets the name of the cluster in the backend. SetClusterName
 // can only be called once on a cluster after which it will return trace.AlreadyExists.
-func (s *ClusterConfigurationService) SetClusterName(c types.ClusterName) error {
+func (s *ClusterConfigurationService) SetClusterName(c services.ClusterName) error {
 	value, err := resource.MarshalClusterName(c)
 	if err != nil {
 		return trace.Wrap(err)
@@ -85,7 +85,7 @@ func (s *ClusterConfigurationService) SetClusterName(c types.ClusterName) error 
 }
 
 // UpsertClusterName sets the name of the cluster in the backend.
-func (s *ClusterConfigurationService) UpsertClusterName(c types.ClusterName) error {
+func (s *ClusterConfigurationService) UpsertClusterName(c services.ClusterName) error {
 	value, err := resource.MarshalClusterName(c)
 	if err != nil {
 		return trace.Wrap(err)
@@ -105,7 +105,7 @@ func (s *ClusterConfigurationService) UpsertClusterName(c types.ClusterName) err
 }
 
 // GetStaticTokens gets the list of static tokens used to provision nodes.
-func (s *ClusterConfigurationService) GetStaticTokens() (types.StaticTokens, error) {
+func (s *ClusterConfigurationService) GetStaticTokens() (services.StaticTokens, error) {
 	item, err := s.Get(context.TODO(), backend.Key(clusterConfigPrefix, staticTokensPrefix))
 	if err != nil {
 		if trace.IsNotFound(err) {
@@ -118,7 +118,7 @@ func (s *ClusterConfigurationService) GetStaticTokens() (types.StaticTokens, err
 }
 
 // SetStaticTokens sets the list of static tokens used to provision nodes.
-func (s *ClusterConfigurationService) SetStaticTokens(c types.StaticTokens) error {
+func (s *ClusterConfigurationService) SetStaticTokens(c services.StaticTokens) error {
 	value, err := resource.MarshalStaticTokens(c)
 	if err != nil {
 		return trace.Wrap(err)
@@ -150,7 +150,7 @@ func (s *ClusterConfigurationService) DeleteStaticTokens() error {
 
 // GetAuthPreference fetches the cluster authentication preferences
 // from the backend and return them.
-func (s *ClusterConfigurationService) GetAuthPreference() (types.AuthPreference, error) {
+func (s *ClusterConfigurationService) GetAuthPreference() (services.AuthPreference, error) {
 	item, err := s.Get(context.TODO(), backend.Key(authPrefix, preferencePrefix, generalPrefix))
 	if err != nil {
 		if trace.IsNotFound(err) {
@@ -164,7 +164,7 @@ func (s *ClusterConfigurationService) GetAuthPreference() (types.AuthPreference,
 
 // SetAuthPreference sets the cluster authentication preferences
 // on the backend.
-func (s *ClusterConfigurationService) SetAuthPreference(preferences types.AuthPreference) error {
+func (s *ClusterConfigurationService) SetAuthPreference(preferences services.AuthPreference) error {
 	value, err := resource.MarshalAuthPreference(preferences)
 	if err != nil {
 		return trace.Wrap(err)
@@ -184,8 +184,8 @@ func (s *ClusterConfigurationService) SetAuthPreference(preferences types.AuthPr
 	return nil
 }
 
-// GetClusterConfig gets types.ClusterConfig from the backend.
-func (s *ClusterConfigurationService) GetClusterConfig(opts ...auth.MarshalOption) (types.ClusterConfig, error) {
+// GetClusterConfig gets services.ClusterConfig from the backend.
+func (s *ClusterConfigurationService) GetClusterConfig(opts ...auth.MarshalOption) (services.ClusterConfig, error) {
 	item, err := s.Get(context.TODO(), backend.Key(clusterConfigPrefix, generalPrefix))
 	if err != nil {
 		if trace.IsNotFound(err) {
@@ -198,7 +198,7 @@ func (s *ClusterConfigurationService) GetClusterConfig(opts ...auth.MarshalOptio
 			resource.WithExpires(item.Expires))...)
 }
 
-// DeleteClusterConfig deletes types.ClusterConfig from the backend.
+// DeleteClusterConfig deletes services.ClusterConfig from the backend.
 func (s *ClusterConfigurationService) DeleteClusterConfig() error {
 	err := s.Delete(context.TODO(), backend.Key(clusterConfigPrefix, generalPrefix))
 	if err != nil {
@@ -210,8 +210,8 @@ func (s *ClusterConfigurationService) DeleteClusterConfig() error {
 	return nil
 }
 
-// SetClusterConfig sets types.ClusterConfig on the backend.
-func (s *ClusterConfigurationService) SetClusterConfig(c types.ClusterConfig) error {
+// SetClusterConfig sets services.ClusterConfig on the backend.
+func (s *ClusterConfigurationService) SetClusterConfig(c services.ClusterConfig) error {
 	value, err := resource.MarshalClusterConfig(c)
 	if err != nil {
 		return trace.Wrap(err)

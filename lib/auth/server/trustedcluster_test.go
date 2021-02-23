@@ -21,12 +21,10 @@ import (
 	"time"
 
 	"github.com/gravitational/teleport"
-	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib/auth"
 	authority "github.com/gravitational/teleport/lib/auth/testauthority"
 	"github.com/gravitational/teleport/lib/backend/memory"
 	"github.com/gravitational/teleport/lib/services"
-	"github.com/gravitational/teleport/lib/utils"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
@@ -35,7 +33,7 @@ import (
 func TestRemoteClusterStatus(t *testing.T) {
 	a := newTestAuthServer(t)
 
-	rc, err := types.NewRemoteCluster("rc")
+	rc, err := services.NewRemoteCluster("rc")
 	require.NoError(t, err)
 	require.NoError(t, a.CreateRemoteCluster(rc))
 
@@ -49,21 +47,21 @@ func TestRemoteClusterStatus(t *testing.T) {
 
 	// Create several tunnel connections.
 	lastHeartbeat := a.clock.Now().UTC()
-	tc1, err := types.NewTunnelConnection("conn-1", types.TunnelConnectionSpecV2{
+	tc1, err := services.NewTunnelConnection("conn-1", services.TunnelConnectionSpecV2{
 		ClusterName:   rc.GetName(),
 		ProxyName:     "proxy-1",
 		LastHeartbeat: lastHeartbeat,
-		Type:          types.ProxyTunnel,
+		Type:          services.ProxyTunnel,
 	})
 	require.NoError(t, err)
 	require.NoError(t, a.UpsertTunnelConnection(tc1))
 
 	lastHeartbeat = lastHeartbeat.Add(time.Minute)
-	tc2, err := types.NewTunnelConnection("conn-2", types.TunnelConnectionSpecV2{
+	tc2, err := services.NewTunnelConnection("conn-2", services.TunnelConnectionSpecV2{
 		ClusterName:   rc.GetName(),
 		ProxyName:     "proxy-2",
 		LastHeartbeat: lastHeartbeat,
-		Type:          types.ProxyTunnel,
+		Type:          services.ProxyTunnel,
 	})
 	require.NoError(t, err)
 	require.NoError(t, a.UpsertTunnelConnection(tc2))
@@ -111,7 +109,7 @@ func newTestAuthServer(t *testing.T, name ...string) *Server {
 		clusterName = name[0]
 	}
 	// Create a cluster with minimal viable config.
-	clusterNameRes, err := types.NewClusterName(types.ClusterNameSpecV2{
+	clusterNameRes, err := services.NewClusterName(services.ClusterNameSpecV2{
 		ClusterName: clusterName,
 	})
 	require.NoError(t, err)

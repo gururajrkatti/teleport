@@ -23,6 +23,7 @@ import (
 	"github.com/gravitational/teleport/lib/auth"
 	"github.com/gravitational/teleport/lib/auth/resource"
 	"github.com/gravitational/teleport/lib/backend"
+	"github.com/gravitational/teleport/lib/services"
 
 	"github.com/gravitational/trace"
 )
@@ -60,13 +61,13 @@ func NewCAService(b backend.Backend) *CA {
 }
 
 // DeleteAllCertAuthorities deletes all certificate authorities of a certain type
-func (s *CA) DeleteAllCertAuthorities(caType types.CertAuthType) error {
+func (s *CA) DeleteAllCertAuthorities(caType services.CertAuthType) error {
 	startKey := backend.Key(authoritiesPrefix, string(caType))
 	return s.DeleteRange(context.TODO(), startKey, backend.RangeEnd(startKey))
 }
 
 // CreateCertAuthority updates or inserts a new certificate authority
-func (s *CA) CreateCertAuthority(ca types.CertAuthority) error {
+func (s *CA) CreateCertAuthority(ca services.CertAuthority) error {
 	if err := auth.ValidateCertAuthority(ca); err != nil {
 		return trace.Wrap(err)
 	}
@@ -91,7 +92,7 @@ func (s *CA) CreateCertAuthority(ca types.CertAuthority) error {
 }
 
 // UpsertCertAuthority updates or inserts a new certificate authority
-func (s *CA) UpsertCertAuthority(ca types.CertAuthority) error {
+func (s *CA) UpsertCertAuthority(ca services.CertAuthority) error {
 	if err := auth.ValidateCertAuthority(ca); err != nil {
 		return trace.Wrap(err)
 	}
@@ -116,7 +117,7 @@ func (s *CA) UpsertCertAuthority(ca types.CertAuthority) error {
 // CompareAndSwapCertAuthority updates the cert authority value
 // if the existing value matches existing parameter, returns nil if succeeds,
 // trace.CompareFailed otherwise.
-func (s *CA) CompareAndSwapCertAuthority(new, existing types.CertAuthority) error {
+func (s *CA) CompareAndSwapCertAuthority(new, existing services.CertAuthority) error {
 	if err := auth.ValidateCertAuthority(new); err != nil {
 		return trace.Wrap(err)
 	}
@@ -151,12 +152,12 @@ func (s *CA) CompareAndSwapCertAuthority(new, existing types.CertAuthority) erro
 }
 
 // DeleteCertAuthority deletes particular certificate authority
-func (s *CA) DeleteCertAuthority(id types.CertAuthID) error {
+func (s *CA) DeleteCertAuthority(id services.CertAuthID) error {
 	if err := id.Check(); err != nil {
 		return trace.Wrap(err)
 	}
-	// when removing a types.CertAuthority also remove any deactivated
-	// types.CertAuthority as well if they exist.
+	// when removing a services.CertAuthority also remove any deactivated
+	// services.CertAuthority as well if they exist.
 	err := s.Delete(context.TODO(), backend.Key(authoritiesPrefix, deactivatedPrefix, string(id.Type), id.DomainName))
 	if err != nil {
 		if !trace.IsNotFound(err) {
@@ -172,7 +173,7 @@ func (s *CA) DeleteCertAuthority(id types.CertAuthID) error {
 
 // ActivateCertAuthority moves a CertAuthority from the deactivated list to
 // the normal list.
-func (s *CA) ActivateCertAuthority(id types.CertAuthID) error {
+func (s *CA) ActivateCertAuthority(id services.CertAuthID) error {
 	item, err := s.Get(context.TODO(), backend.Key(authoritiesPrefix, deactivatedPrefix, string(id.Type), id.DomainName))
 	if err != nil {
 		if trace.IsNotFound(err) {
@@ -202,7 +203,7 @@ func (s *CA) ActivateCertAuthority(id types.CertAuthID) error {
 
 // DeactivateCertAuthority moves a CertAuthority from the normal list to
 // the deactivated list.
-func (s *CA) DeactivateCertAuthority(id types.CertAuthID) error {
+func (s *CA) DeactivateCertAuthority(id services.CertAuthID) error {
 	certAuthority, err := s.GetCertAuthority(id, true)
 	if err != nil {
 		if trace.IsNotFound(err) {
@@ -237,7 +238,7 @@ func (s *CA) DeactivateCertAuthority(id types.CertAuthID) error {
 
 // GetCertAuthority returns certificate authority by given id. Parameter loadSigningKeys
 // controls if signing keys are loaded
-func (s *CA) GetCertAuthority(id types.CertAuthID, loadSigningKeys bool, opts ...auth.MarshalOption) (types.CertAuthority, error) {
+func (s *CA) GetCertAuthority(id services.CertAuthID, loadSigningKeys bool, opts ...auth.MarshalOption) (services.CertAuthority, error) {
 	if err := id.Check(); err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -257,16 +258,16 @@ func (s *CA) GetCertAuthority(id types.CertAuthID, loadSigningKeys bool, opts ..
 	return ca, nil
 }
 
-func setSigningKeys(ca types.CertAuthority, loadSigningKeys bool) {
+func setSigningKeys(ca services.CertAuthority, loadSigningKeys bool) {
 	if loadSigningKeys {
 		return
 	}
-	types.RemoveCASecrets(ca)
+	services.RemoveCASecrets(ca)
 }
 
 // GetCertAuthorities returns a list of authorities of a given type
 // loadSigningKeys controls whether signing keys should be loaded or not
-func (s *CA) GetCertAuthorities(caType types.CertAuthType, loadSigningKeys bool, opts ...auth.MarshalOption) ([]types.CertAuthority, error) {
+func (s *CA) GetCertAuthorities(caType services.CertAuthType, loadSigningKeys bool, opts ...auth.MarshalOption) ([]services.CertAuthority, error) {
 	if err := caType.Check(); err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -278,8 +279,8 @@ func (s *CA) GetCertAuthorities(caType types.CertAuthType, loadSigningKeys bool,
 		return nil, trace.Wrap(err)
 	}
 
-	// Marshal values into a []types.CertAuthority slice.
-	cas := make([]types.CertAuthority, len(result.Items))
+	// Marshal values into a []services.CertAuthority slice.
+	cas := make([]services.CertAuthority, len(result.Items))
 	for i, item := range result.Items {
 		ca, err := resource.UnmarshalCertAuthority(
 			item.Value, resource.AddOptions(opts,

@@ -928,7 +928,7 @@ func parseAuthorizedKeys(bytes []byte, allowedLogins []string) (services.CertAut
 
 	// transform old allowed logins into roles
 	role := auth.RoleForCertAuthority(ca)
-	role.SetLogins(types.Allow, allowedLogins)
+	role.SetLogins(services.Allow, allowedLogins)
 	ca.AddRole(role.GetName())
 
 	return ca, role, nil
@@ -966,7 +966,7 @@ func parseKnownHosts(bytes []byte, allowedLogins []string) (services.CertAuthori
 
 	// transform old allowed logins into roles
 	role := auth.RoleForCertAuthority(ca)
-	role.SetLogins(types.Allow, utils.CopyStrings(allowedLogins))
+	role.SetLogins(services.Allow, utils.CopyStrings(allowedLogins))
 	ca.AddRole(role.GetName())
 
 	return ca, role, nil

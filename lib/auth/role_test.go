@@ -29,9 +29,10 @@ import (
 	"github.com/gravitational/teleport/lib/defaults"
 	"github.com/gravitational/teleport/lib/utils"
 
-	"github.com/gravitational/trace"
 	"github.com/pborman/uuid"
 	"github.com/stretchr/testify/require"
+
+	"github.com/gravitational/trace"
 )
 
 // TestConnAndSessLimits verifies that role sets correctly calculate
@@ -2336,15 +2337,7 @@ func BenchmarkCheckAccessToServer(b *testing.B) {
 	}
 }
 
-type RoleMapSuite struct{}
-
-var _ = check.Suite(&RoleMapSuite{})
-
-func (s *RoleMapSuite) SetUpSuite(c *check.C) {
-	utils.InitLoggerForTests(testing.Verbose())
-}
-
-func (s *RoleMapSuite) TestRoleParsing(c *check.C) {
+func TestRoleParsing(t *testing.T) {
 	testCases := []struct {
 		roleMap types.RoleMap
 		err     error
@@ -2379,18 +2372,20 @@ func (s *RoleMapSuite) TestRoleParsing(c *check.C) {
 	}
 
 	for i, tc := range testCases {
-		comment := check.Commentf("test case '%v'", i)
-		_, err := parseRoleMap(tc.roleMap)
-		if tc.err != nil {
-			c.Assert(err, check.NotNil, comment)
-			c.Assert(err, check.FitsTypeOf, tc.err)
-		} else {
-			c.Assert(err, check.IsNil)
-		}
+		comment := fmt.Sprintf("test case '%v'", i)
+		t.Run(comment, func(t *testing.T) {
+			_, err := parseRoleMap(tc.roleMap)
+			if tc.err != nil {
+				require.Error(t, err)
+				require.IsType(t, tc.err, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
 	}
 }
 
-func (s *RoleMapSuite) TestRoleMap(c *check.C) {
+func TestRoleMap(t *testing.T) {
 	testCases := []struct {
 		remote  []string
 		local   []string
@@ -2498,14 +2493,15 @@ func (s *RoleMapSuite) TestRoleMap(c *check.C) {
 	}
 
 	for _, tc := range testCases {
-		comment := check.Commentf("test case '%v'", tc.name)
-		local, err := MapRoles(tc.roleMap, tc.remote)
-		if tc.err != nil {
-			c.Assert(err, check.NotNil, comment)
-			c.Assert(err, check.FitsTypeOf, tc.err)
-		} else {
-			c.Assert(err, check.IsNil, comment)
-			c.Assert(local, check.DeepEquals, tc.local, comment)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			local, err := MapRoles(tc.roleMap, tc.remote)
+			if tc.err != nil {
+				require.Error(t, err)
+				require.IsType(t, tc.err, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.local, local)
+			}
+		})
 	}
 }

@@ -24,6 +24,7 @@ import (
 	"github.com/gravitational/teleport/lib/auth"
 	"github.com/gravitational/teleport/lib/auth/resource"
 	"github.com/gravitational/teleport/lib/backend"
+	"github.com/gravitational/teleport/lib/services"
 
 	"github.com/gravitational/trace"
 )
@@ -61,12 +62,12 @@ func (s *AccessService) DeleteAllRoles() error {
 }
 
 // GetRoles returns a list of roles registered with the local auth server
-func (s *AccessService) GetRoles() ([]types.Role, error) {
+func (s *AccessService) GetRoles() ([]services.Role, error) {
 	result, err := s.GetRange(context.TODO(), backend.Key(rolesPrefix), backend.RangeEnd(backend.Key(rolesPrefix)), backend.NoLimit)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	out := make([]types.Role, 0, len(result.Items))
+	out := make([]services.Role, 0, len(result.Items))
 	for _, item := range result.Items {
 		role, err := resource.UnmarshalRole(item.Value,
 			resource.WithResourceID(item.ID), resource.WithExpires(item.Expires))
@@ -80,7 +81,7 @@ func (s *AccessService) GetRoles() ([]types.Role, error) {
 }
 
 // CreateRole creates a role on the backend.
-func (s *AccessService) CreateRole(role types.Role) error {
+func (s *AccessService) CreateRole(role services.Role) error {
 	value, err := resource.MarshalRole(role)
 	if err != nil {
 		return trace.Wrap(err)
@@ -100,7 +101,7 @@ func (s *AccessService) CreateRole(role types.Role) error {
 }
 
 // UpsertRole updates parameters about role
-func (s *AccessService) UpsertRole(ctx context.Context, role types.Role) error {
+func (s *AccessService) UpsertRole(ctx context.Context, role services.Role) error {
 	value, err := resource.MarshalRole(role)
 	if err != nil {
 		return trace.Wrap(err)
@@ -121,7 +122,7 @@ func (s *AccessService) UpsertRole(ctx context.Context, role types.Role) error {
 }
 
 // GetRole returns a role by name
-func (s *AccessService) GetRole(name string) (types.Role, error) {
+func (s *AccessService) GetRole(name string) (services.Role, error) {
 	if name == "" {
 		return nil, trace.BadParameter("missing role name")
 	}

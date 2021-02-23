@@ -32,7 +32,6 @@ import (
 	"golang.org/x/text/encoding/unicode"
 
 	"github.com/gravitational/teleport"
-	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib/auth"
 	authresource "github.com/gravitational/teleport/lib/auth/resource"
 	"github.com/gravitational/teleport/lib/client"
@@ -82,7 +81,7 @@ type TerminalRequest struct {
 
 // AuthProvider is a subset of the full Auth API.
 type AuthProvider interface {
-	GetNodes(namespace string, opts ...auth.MarshalOption) ([]types.Server, error)
+	GetNodes(namespace string, opts ...auth.MarshalOption) ([]services.Server, error)
 	GetSessionEvents(namespace string, sid session.ID, after int, includePrintEvents bool) ([]events.EventFields, error)
 }
 

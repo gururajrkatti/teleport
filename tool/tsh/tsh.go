@@ -37,6 +37,7 @@ import (
 	"github.com/gravitational/teleport"
 	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib/asciitable"
+	"github.com/gravitational/teleport/lib/auth"
 	authclient "github.com/gravitational/teleport/lib/auth/client"
 	"github.com/gravitational/teleport/lib/auth/server"
 	"github.com/gravitational/teleport/lib/backend"
@@ -60,7 +61,6 @@ import (
 
 	gops "github.com/google/gops/agent"
 	"github.com/jonboulle/clockwork"
-	"github.com/pborman/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -1006,7 +1006,7 @@ func executeAccessRequest(cf *CLIConf) error {
 	if cf.Username == "" {
 		cf.Username = tc.Username
 	}
-	req, err := types.NewAccessRequest(uuid.New(), cf.Username, roles[0], roles[1:]...)
+	req, err := auth.NewAccessRequest(cf.Username, roles[0], roles[1:]...)
 	if err != nil {
 		return trace.Wrap(err)
 	}
@@ -1841,7 +1841,7 @@ func getRequestResolution(cf *CLIConf, clt authclient.ClientI, req services.Acce
 	watcher, err := clt.NewWatcher(cf.Context, services.Watch{
 		Name: "await-request-approval",
 		Kinds: []services.WatchKind{
-			types.WatchKind{
+			services.WatchKind{
 				Kind:   services.KindAccessRequest,
 				Filter: filter.IntoMap(),
 			},

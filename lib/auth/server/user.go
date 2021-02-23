@@ -27,18 +27,18 @@ import (
 	"context"
 
 	"github.com/gravitational/teleport"
-	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib/auth"
 	"github.com/gravitational/teleport/lib/events"
+	"github.com/gravitational/teleport/lib/services"
 
 	"github.com/gravitational/trace"
 )
 
 // CreateUser inserts a new user entry in a backend.
-func (s *Server) CreateUser(ctx context.Context, user types.User) error {
+func (s *Server) CreateUser(ctx context.Context, user services.User) error {
 	if user.GetCreatedBy().IsEmpty() {
-		user.SetCreatedBy(types.CreatedBy{
-			User: types.UserRef{Name: clientUsername(ctx)},
+		user.SetCreatedBy(services.CreatedBy{
+			User: services.UserRef{Name: clientUsername(ctx)},
 			Time: s.GetClock().Now().UTC(),
 		})
 	}
@@ -46,7 +46,7 @@ func (s *Server) CreateUser(ctx context.Context, user types.User) error {
 	// TODO: ctx is being swallowed here because the current implementation of
 	// s.Identity.CreateUser is an older implementation that does not curently
 	// accept a context.
-	if err := s.Services.Identity.CreateUser(user); err != nil {
+	if err := s.Identity.CreateUser(user); err != nil {
 		return trace.Wrap(err)
 	}
 
@@ -79,8 +79,8 @@ func (s *Server) CreateUser(ctx context.Context, user types.User) error {
 }
 
 // UpdateUser updates an existing user in a backend.
-func (s *Server) UpdateUser(ctx context.Context, user types.User) error {
-	if err := s.Services.Identity.UpdateUser(ctx, user); err != nil {
+func (s *Server) UpdateUser(ctx context.Context, user services.User) error {
+	if err := s.Identity.UpdateUser(ctx, user); err != nil {
 		return trace.Wrap(err)
 	}
 
@@ -113,8 +113,8 @@ func (s *Server) UpdateUser(ctx context.Context, user types.User) error {
 }
 
 // UpsertUser updates a user.
-func (s *Server) UpsertUser(user types.User) error {
-	err := s.Services.Identity.UpsertUser(user)
+func (s *Server) UpsertUser(user services.User) error {
+	err := s.Identity.UpsertUser(user)
 	if err != nil {
 		return trace.Wrap(err)
 	}
@@ -149,20 +149,20 @@ func (s *Server) UpsertUser(user types.User) error {
 
 // DeleteUser deletes an existng user in a backend by username.
 func (s *Server) DeleteUser(ctx context.Context, user string) error {
-	role, err := s.Services.Access.GetRole(auth.RoleNameForUser(user))
+	role, err := s.Access.GetRole(auth.RoleNameForUser(user))
 	if err != nil {
 		if !trace.IsNotFound(err) {
 			return trace.Wrap(err)
 		}
 	} else {
-		if err := s.Services.Access.DeleteRole(ctx, role.GetName()); err != nil {
+		if err := s.Access.DeleteRole(ctx, role.GetName()); err != nil {
 			if !trace.IsNotFound(err) {
 				return trace.Wrap(err)
 			}
 		}
 	}
 
-	err = s.Services.Identity.DeleteUser(ctx, user)
+	err = s.Identity.DeleteUser(ctx, user)
 	if err != nil {
 		return trace.Wrap(err)
 	}

@@ -29,6 +29,7 @@ import (
 	"github.com/gravitational/teleport/lib/auth"
 	"github.com/gravitational/teleport/lib/defaults"
 	"github.com/gravitational/teleport/lib/events"
+	"github.com/gravitational/teleport/lib/services"
 	"github.com/gravitational/teleport/lib/utils"
 
 	"github.com/coreos/go-oidc/jose"
@@ -39,7 +40,7 @@ import (
 	"golang.org/x/oauth2/jwt"
 )
 
-func (a *Server) getOrCreateOIDCClient(conn types.OIDCConnector) (*oidc.Client, error) {
+func (a *Server) getOrCreateOIDCClient(conn services.OIDCConnector) (*oidc.Client, error) {
 	client, err := a.getOIDCClient(conn)
 	if err == nil {
 		return client, nil
@@ -50,7 +51,7 @@ func (a *Server) getOrCreateOIDCClient(conn types.OIDCConnector) (*oidc.Client, 
 	return a.createOIDCClient(conn)
 }
 
-func (a *Server) getOIDCClient(conn types.OIDCConnector) (*oidc.Client, error) {
+func (a *Server) getOIDCClient(conn services.OIDCConnector) (*oidc.Client, error) {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 
@@ -69,7 +70,7 @@ func (a *Server) getOIDCClient(conn types.OIDCConnector) (*oidc.Client, error) {
 
 }
 
-func (a *Server) createOIDCClient(conn types.OIDCConnector) (*oidc.Client, error) {
+func (a *Server) createOIDCClient(conn services.OIDCConnector) (*oidc.Client, error) {
 	config := oidcConfig(conn)
 	client, err := oidc.NewClient(config)
 	if err != nil {
@@ -132,7 +133,7 @@ func (a *Server) createOIDCClient(conn types.OIDCConnector) (*oidc.Client, error
 	return client, nil
 }
 
-func oidcConfig(conn types.OIDCConnector) oidc.ClientConfig {
+func oidcConfig(conn services.OIDCConnector) oidc.ClientConfig {
 	return oidc.ClientConfig{
 		RedirectURL: conn.GetRedirectURL(),
 		Credentials: oidc.ClientCredentials{
@@ -145,8 +146,8 @@ func oidcConfig(conn types.OIDCConnector) oidc.ClientConfig {
 }
 
 // UpsertOIDCConnector creates or updates an OIDC connector.
-func (a *Server) UpsertOIDCConnector(ctx context.Context, connector types.OIDCConnector) error {
-	if err := a.Services.Identity.UpsertOIDCConnector(connector); err != nil {
+func (a *Server) UpsertOIDCConnector(ctx context.Context, connector services.OIDCConnector) error {
+	if err := a.Identity.UpsertOIDCConnector(connector); err != nil {
 		return trace.Wrap(err)
 	}
 	if err := a.emitter.EmitAuditEvent(ctx, &events.OIDCConnectorCreate{
@@ -169,7 +170,7 @@ func (a *Server) UpsertOIDCConnector(ctx context.Context, connector types.OIDCCo
 
 // DeleteOIDCConnector deletes an OIDC connector by name.
 func (a *Server) DeleteOIDCConnector(ctx context.Context, connectorName string) error {
-	if err := a.Services.Identity.DeleteOIDCConnector(connectorName); err != nil {
+	if err := a.Identity.DeleteOIDCConnector(connectorName); err != nil {
 		return trace.Wrap(err)
 	}
 	if err := a.emitter.EmitAuditEvent(ctx, &events.OIDCConnectorDelete{
@@ -190,7 +191,7 @@ func (a *Server) DeleteOIDCConnector(ctx context.Context, connectorName string) 
 }
 
 func (a *Server) CreateOIDCAuthRequest(req auth.OIDCAuthRequest) (*auth.OIDCAuthRequest, error) {
-	connector, err := a.Services.Identity.GetOIDCConnector(req.ConnectorID, true)
+	connector, err := a.Identity.GetOIDCConnector(req.ConnectorID, true)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -229,7 +230,7 @@ func (a *Server) CreateOIDCAuthRequest(req auth.OIDCAuthRequest) (*auth.OIDCAuth
 
 	log.Debugf("OIDC redirect URL: %v.", req.RedirectURL)
 
-	err = a.Services.Identity.CreateOIDCAuthRequest(req, defaults.OIDCAuthRequestTTL)
+	err = a.Identity.CreateOIDCAuthRequest(req, defaults.OIDCAuthRequestTTL)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -307,12 +308,12 @@ func (a *Server) validateOIDCAuthCallback(q url.Values) (*oidcAuthResponse, erro
 		return nil, trace.Wrap(err)
 	}
 
-	req, err := a.Services.Identity.GetOIDCAuthRequest(stateToken)
+	req, err := a.Identity.GetOIDCAuthRequest(stateToken)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
 
-	connector, err := a.Services.Identity.GetOIDCConnector(req.ConnectorID, true)
+	connector, err := a.Identity.GetOIDCConnector(req.ConnectorID, true)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -376,7 +377,7 @@ func (a *Server) validateOIDCAuthCallback(q url.Values) (*oidcAuthResponse, erro
 	// Auth was successful, return session, certificate, etc. to caller.
 	re.auth = OIDCAuthResponse{
 		Req: *req,
-		Identity: types.ExternalIdentity{
+		Identity: services.ExternalIdentity{
 			ConnectorID: params.connectorName,
 			Username:    params.username,
 		},
@@ -412,8 +413,8 @@ func (a *Server) validateOIDCAuthCallback(q url.Values) (*oidcAuthResponse, erro
 		re.auth.TLSCert = tlsCert
 
 		// Return the host CA for this cluster only.
-		authority, err := a.GetCertAuthority(types.CertAuthID{
-			Type:       types.HostCA,
+		authority, err := a.GetCertAuthority(services.CertAuthID{
+			Type:       services.HostCA,
 			DomainName: clusterName.GetClusterName(),
 		}, false)
 		if err != nil {
@@ -431,9 +432,9 @@ type OIDCAuthResponse struct {
 	// Username is authenticated teleport username
 	Username string `json:"username"`
 	// Identity contains validated OIDC identity
-	Identity types.ExternalIdentity `json:"identity"`
+	Identity services.ExternalIdentity `json:"identity"`
 	// Web session will be generated by auth server if requested in OIDCAuthRequest
-	Session types.WebSession `json:"session,omitempty"`
+	Session services.WebSession `json:"session,omitempty"`
 	// Cert will be generated by certificate authority
 	Cert []byte `json:"cert,omitempty"`
 	// TLSCert is PEM encoded TLS certificate
@@ -442,10 +443,10 @@ type OIDCAuthResponse struct {
 	Req auth.OIDCAuthRequest `json:"req"`
 	// HostSigners is a list of signing host public keys
 	// trusted by proxy, used in console login
-	HostSigners []types.CertAuthority `json:"host_signers"`
+	HostSigners []services.CertAuthority `json:"host_signers"`
 }
 
-func (a *Server) calculateOIDCUser(connector types.OIDCConnector, claims jose.Claims, ident *oidc.Identity, request *auth.OIDCAuthRequest) (*createUserParams, error) {
+func (a *Server) calculateOIDCUser(connector services.OIDCConnector, claims jose.Claims, ident *oidc.Identity, request *auth.OIDCAuthRequest) (*createUserParams, error) {
 	var err error
 
 	p := createUserParams{
@@ -461,7 +462,7 @@ func (a *Server) calculateOIDCUser(connector types.OIDCConnector, claims jose.Cl
 	}
 
 	// Pick smaller for role: session TTL from role or requested TTL.
-	roles, err := auth.FetchRoles(p.roles, a.Services.Access, p.traits)
+	roles, err := auth.FetchRoles(p.roles, a.Access, p.traits)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -471,31 +472,31 @@ func (a *Server) calculateOIDCUser(connector types.OIDCConnector, claims jose.Cl
 	return &p, nil
 }
 
-func (a *Server) createOIDCUser(p *createUserParams) (types.User, error) {
+func (a *Server) createOIDCUser(p *createUserParams) (services.User, error) {
 	expires := a.GetClock().Now().UTC().Add(p.sessionTTL)
 
 	log.Debugf("Generating dynamic OIDC identity %v/%v with roles: %v.", p.connectorName, p.username, p.roles)
-	user := &types.UserV2{
-		Kind:    types.KindUser,
-		Version: types.V2,
-		Metadata: types.Metadata{
+	user := &services.UserV2{
+		Kind:    services.KindUser,
+		Version: services.V2,
+		Metadata: services.Metadata{
 			Name:      p.username,
 			Namespace: defaults.Namespace,
 			Expires:   &expires,
 		},
-		Spec: types.UserSpecV2{
+		Spec: services.UserSpecV2{
 			Roles:  p.roles,
 			Traits: p.traits,
-			OIDCIdentities: []types.ExternalIdentity{
+			OIDCIdentities: []services.ExternalIdentity{
 				{
 					ConnectorID: p.connectorName,
 					Username:    p.username,
 				},
 			},
-			CreatedBy: types.CreatedBy{
-				User: types.UserRef{Name: teleport.UserSystem},
+			CreatedBy: services.CreatedBy{
+				User: services.UserRef{Name: teleport.UserSystem},
 				Time: a.clock.Now().UTC(),
-				Connector: &types.ConnectorRef{
+				Connector: &services.ConnectorRef{
 					Type:     teleport.OIDC,
 					ID:       p.connectorName,
 					Identity: p.username,
@@ -505,7 +506,7 @@ func (a *Server) createOIDCUser(p *createUserParams) (types.User, error) {
 	}
 
 	// Get the user to check if it already exists or not.
-	existingUser, err := a.Services.Identity.GetUser(p.username, false)
+	existingUser, err := a.Identity.GetUser(p.username, false)
 	if err != nil && !trace.IsNotFound(err) {
 		return nil, trace.Wrap(err)
 	}
@@ -771,7 +772,7 @@ func mergeClaims(a jose.Claims, b jose.Claims) (jose.Claims, error) {
 }
 
 // getClaims gets claims from ID token and UserInfo and returns UserInfo claims merged into ID token claims.
-func (a *Server) getClaims(oidcClient *oidc.Client, connector types.OIDCConnector, code string) (jose.Claims, error) {
+func (a *Server) getClaims(oidcClient *oidc.Client, connector services.OIDCConnector, code string) (jose.Claims, error) {
 	var err error
 
 	oac, err := oidcClient.OAuthClient()

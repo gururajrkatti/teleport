@@ -17,11 +17,15 @@ limitations under the License.
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 
-	"github.com/coreos/go-oidc/jose"
+	"github.com/gravitational/teleport/api/types"
+	"github.com/gravitational/teleport/lib/auth"
+	"github.com/gravitational/teleport/lib/auth/resource"
 	"github.com/gravitational/teleport/lib/defaults"
-	"github.com/gravitational/teleport/lib/utils"
+
+	"github.com/coreos/go-oidc/jose"
 	saml2 "github.com/russellhaering/gosaml2"
 	samltypes "github.com/russellhaering/gosaml2/types"
 	"gopkg.in/check.v1"
@@ -47,14 +51,14 @@ func (s *UserSuite) TestTraits(c *check.C) {
 	}
 
 	for _, tt := range tests {
-		user := &UserV2{
-			Kind:    KindUser,
-			Version: V2,
-			Metadata: Metadata{
+		user := &types.UserV2{
+			Kind:    types.KindUser,
+			Version: types.V2,
+			Metadata: types.Metadata{
 				Name:      "foo",
 				Namespace: defaults.Namespace,
 			},
-			Spec: UserSpecV2{
+			Spec: types.UserSpecV2{
 				Traits: map[string][]string{
 					tt.traitName: {"foo"},
 				},
@@ -64,7 +68,7 @@ func (s *UserSuite) TestTraits(c *check.C) {
 		data, err := json.Marshal(user)
 		c.Assert(err, check.IsNil)
 
-		_, err = UnmarshalUser(data)
+		_, err = resource.UnmarshalUser(data)
 		c.Assert(err, check.IsNil)
 	}
 }

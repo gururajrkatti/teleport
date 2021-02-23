@@ -218,6 +218,11 @@ func (r *AccessRequestV3) Check() error {
 	if len(r.GetRoles()) < 1 {
 		return trace.BadParameter("access request does not specify any roles")
 	}
+	for _, role := range r.GetRoles() {
+		if role == "" {
+			return trace.BadParameter("access request specifies an empty role")
+		}
+	}
 	if r.GetState().IsPending() {
 		if r.GetResolveReason() != "" {
 			return trace.BadParameter("pending requests cannot include resolve reason")

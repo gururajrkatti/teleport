@@ -1141,7 +1141,7 @@ func (a *Authority) Parse() (services.CertAuthority, services.Role, error) {
 
 	// transform old allowed logins into roles
 	role := auth.RoleForCertAuthority(ca)
-	role.SetLogins(types.Allow, a.AllowedLogins)
+	role.SetLogins(services.Allow, a.AllowedLogins)
 	ca.AddRole(role.GetName())
 
 	for _, path := range a.CheckingKeyFiles {

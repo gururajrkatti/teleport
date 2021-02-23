@@ -35,6 +35,7 @@ import (
 	"github.com/gravitational/teleport/lib/events"
 	"github.com/gravitational/teleport/lib/httplib"
 	"github.com/gravitational/teleport/lib/jwt"
+	"github.com/gravitational/teleport/lib/services"
 	"github.com/gravitational/teleport/lib/session"
 	"github.com/gravitational/teleport/lib/utils"
 	"github.com/gravitational/trace"
@@ -254,7 +255,7 @@ func (g *GRPCServer) WatchEvents(watch *proto.Watch, stream proto.AuthService_Wa
 	if err != nil {
 		return trail.ToGRPC(err)
 	}
-	servicesWatch := types.Watch{
+	servicesWatch := services.Watch{
 		Name: auth.User.GetName(),
 	}
 	for _, kind := range watch.Kinds {
@@ -285,7 +286,7 @@ func (g *GRPCServer) WatchEvents(watch *proto.Watch, stream proto.AuthService_Wa
 }
 
 // UpsertNode upserts node
-func (g *GRPCServer) UpsertNode(ctx context.Context, server *types.ServerV2) (*types.KeepAlive, error) {
+func (g *GRPCServer) UpsertNode(ctx context.Context, server *services.ServerV2) (*services.KeepAlive, error) {
 	auth, err := g.authenticate(ctx)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
@@ -312,25 +313,25 @@ func (g *GRPCServer) GenerateUserCerts(ctx context.Context, req *proto.UserCerts
 	if err != nil {
 		return nil, trail.ToGRPC(err)
 	}
-	certs, err := auth.WithRoles.GenerateUserCerts(ctx, *req)
+	certs, err := auth.ServerWithRoles.GenerateUserCerts(ctx, *req)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
 	}
 	return certs, err
 }
 
-func (g *GRPCServer) GetUser(ctx context.Context, req *proto.GetUserRequest) (*types.UserV2, error) {
+func (g *GRPCServer) GetUser(ctx context.Context, req *proto.GetUserRequest) (*services.UserV2, error) {
 	auth, err := g.authenticate(ctx)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
 	}
-	user, err := auth.WithRoles.GetUser(req.Name, req.WithSecrets)
+	user, err := auth.ServerWithRoles.GetUser(req.Name, req.WithSecrets)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
 	}
-	v2, ok := user.(*types.UserV2)
+	v2, ok := user.(*services.UserV2)
 	if !ok {
-		log.Warnf("expected type types.UserV2, got %T for user %q", user, user.GetName())
+		log.Warnf("expected type services.UserV2, got %T for user %q", user, user.GetName())
 		return nil, trail.ToGRPC(trace.Errorf("encountered unexpected user type"))
 	}
 	return v2, nil
@@ -341,14 +342,14 @@ func (g *GRPCServer) GetUsers(req *proto.GetUsersRequest, stream proto.AuthServi
 	if err != nil {
 		return trail.ToGRPC(err)
 	}
-	users, err := auth.WithRoles.GetUsers(req.WithSecrets)
+	users, err := auth.ServerWithRoles.GetUsers(req.WithSecrets)
 	if err != nil {
 		return trail.ToGRPC(err)
 	}
 	for _, user := range users {
-		v2, ok := user.(*types.UserV2)
+		v2, ok := user.(*services.UserV2)
 		if !ok {
-			log.Warnf("expected type types.UserV2, got %T for user %q", user, user.GetName())
+			log.Warnf("expected type services.UserV2, got %T for user %q", user, user.GetName())
 			return trail.ToGRPC(trace.Errorf("encountered unexpected user type"))
 		}
 		if err := stream.Send(v2); err != nil {
@@ -358,22 +359,22 @@ func (g *GRPCServer) GetUsers(req *proto.GetUsersRequest, stream proto.AuthServi
 	return nil
 }
 
-func (g *GRPCServer) GetAccessRequests(ctx context.Context, f *types.AccessRequestFilter) (*proto.AccessRequests, error) {
+func (g *GRPCServer) GetAccessRequests(ctx context.Context, f *services.AccessRequestFilter) (*proto.AccessRequests, error) {
 	auth, err := g.authenticate(ctx)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
 	}
-	var filter types.AccessRequestFilter
+	var filter services.AccessRequestFilter
 	if f != nil {
 		filter = *f
 	}
-	reqs, err := auth.WithRoles.GetAccessRequests(ctx, filter)
+	reqs, err := auth.ServerWithRoles.GetAccessRequests(ctx, filter)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
 	}
-	collector := make([]*types.AccessRequestV3, 0, len(reqs))
+	collector := make([]*services.AccessRequestV3, 0, len(reqs))
 	for _, req := range reqs {
-		r, ok := req.(*types.AccessRequestV3)
+		r, ok := req.(*services.AccessRequestV3)
 		if !ok {
 			err = trace.BadParameter("unexpected access request type %T", req)
 			return nil, trail.ToGRPC(err)
@@ -385,7 +386,7 @@ func (g *GRPCServer) GetAccessRequests(ctx context.Context, f *types.AccessReque
 	}, nil
 }
 
-func (g *GRPCServer) CreateAccessRequest(ctx context.Context, req *types.AccessRequestV3) (*empty.Empty, error) {
+func (g *GRPCServer) CreateAccessRequest(ctx context.Context, req *services.AccessRequestV3) (*empty.Empty, error) {
 	authCtx, err := g.authenticate(ctx)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
@@ -393,7 +394,7 @@ func (g *GRPCServer) CreateAccessRequest(ctx context.Context, req *types.AccessR
 	if err := auth.ValidateAccessRequest(req); err != nil {
 		return nil, trail.ToGRPC(err)
 	}
-	if err := authCtx.WithRoles.CreateAccessRequest(ctx, req); err != nil {
+	if err := authCtx.ServerWithRoles.CreateAccessRequest(ctx, req); err != nil {
 		return nil, trail.ToGRPC(err)
 	}
 	return &empty.Empty{}, nil
@@ -404,7 +405,7 @@ func (g *GRPCServer) DeleteAccessRequest(ctx context.Context, id *proto.RequestI
 	if err != nil {
 		return nil, trail.ToGRPC(err)
 	}
-	if err := auth.WithRoles.DeleteAccessRequest(ctx, id.ID); err != nil {
+	if err := auth.ServerWithRoles.DeleteAccessRequest(ctx, id.ID); err != nil {
 		return nil, trail.ToGRPC(err)
 	}
 	return &empty.Empty{}, nil
@@ -418,7 +419,7 @@ func (g *GRPCServer) SetAccessRequestState(ctx context.Context, req *proto.Reque
 	if req.Delegator != "" {
 		ctx = WithDelegator(ctx, req.Delegator)
 	}
-	if err := auth.WithRoles.SetAccessRequestState(ctx, types.AccessRequestUpdate{
+	if err := auth.ServerWithRoles.SetAccessRequestState(ctx, services.AccessRequestUpdate{
 		RequestID:   req.ID,
 		State:       req.State,
 		Reason:      req.Reason,
@@ -430,19 +431,19 @@ func (g *GRPCServer) SetAccessRequestState(ctx context.Context, req *proto.Reque
 	return &empty.Empty{}, nil
 }
 
-func (g *GRPCServer) GetAccessCapabilities(ctx context.Context, req *types.AccessCapabilitiesRequest) (*types.AccessCapabilities, error) {
+func (g *GRPCServer) GetAccessCapabilities(ctx context.Context, req *services.AccessCapabilitiesRequest) (*services.AccessCapabilities, error) {
 	auth, err := g.authenticate(ctx)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
 	}
-	caps, err := auth.WithRoles.GetAccessCapabilities(ctx, *req)
+	caps, err := auth.ServerWithRoles.GetAccessCapabilities(ctx, *req)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
 	}
 	return caps, nil
 }
 
-func (g *GRPCServer) CreateResetPasswordToken(ctx context.Context, req *proto.CreateResetPasswordTokenRequest) (*types.ResetPasswordTokenV3, error) {
+func (g *GRPCServer) CreateResetPasswordToken(ctx context.Context, req *proto.CreateResetPasswordTokenRequest) (*services.ResetPasswordTokenV3, error) {
 	auth, err := g.authenticate(ctx)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
@@ -461,7 +462,7 @@ func (g *GRPCServer) CreateResetPasswordToken(ctx context.Context, req *proto.Cr
 		return nil, trace.Wrap(err)
 	}
 
-	r, ok := token.(*types.ResetPasswordTokenV3)
+	r, ok := token.(*services.ResetPasswordTokenV3)
 	if !ok {
 		err = trace.BadParameter("unexpected ResetPasswordToken type %T", token)
 		return nil, trail.ToGRPC(err)
@@ -470,7 +471,7 @@ func (g *GRPCServer) CreateResetPasswordToken(ctx context.Context, req *proto.Cr
 	return r, nil
 }
 
-func (g *GRPCServer) RotateResetPasswordTokenSecrets(ctx context.Context, req *proto.RotateResetPasswordTokenSecretsRequest) (*types.ResetPasswordTokenSecretsV3, error) {
+func (g *GRPCServer) RotateResetPasswordTokenSecrets(ctx context.Context, req *proto.RotateResetPasswordTokenSecretsRequest) (*services.ResetPasswordTokenSecretsV3, error) {
 	auth, err := g.authenticate(ctx)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
@@ -486,7 +487,7 @@ func (g *GRPCServer) RotateResetPasswordTokenSecrets(ctx context.Context, req *p
 		return nil, trail.ToGRPC(err)
 	}
 
-	r, ok := secrets.(*types.ResetPasswordTokenSecretsV3)
+	r, ok := secrets.(*services.ResetPasswordTokenSecretsV3)
 	if !ok {
 		err = trace.BadParameter("unexpected ResetPasswordTokenSecrets type %T", secrets)
 		return nil, trail.ToGRPC(err)
@@ -495,7 +496,7 @@ func (g *GRPCServer) RotateResetPasswordTokenSecrets(ctx context.Context, req *p
 	return r, nil
 }
 
-func (g *GRPCServer) GetResetPasswordToken(ctx context.Context, req *proto.GetResetPasswordTokenRequest) (*types.ResetPasswordTokenV3, error) {
+func (g *GRPCServer) GetResetPasswordToken(ctx context.Context, req *proto.GetResetPasswordTokenRequest) (*services.ResetPasswordTokenV3, error) {
 	auth, err := g.authenticate(ctx)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
@@ -511,7 +512,7 @@ func (g *GRPCServer) GetResetPasswordToken(ctx context.Context, req *proto.GetRe
 		return nil, trail.ToGRPC(err)
 	}
 
-	r, ok := token.(*types.ResetPasswordTokenV3)
+	r, ok := token.(*services.ResetPasswordTokenV3)
 	if !ok {
 		err = trace.BadParameter("unexpected ResetPasswordToken type %T", token)
 		return nil, trail.ToGRPC(err)
@@ -521,20 +522,20 @@ func (g *GRPCServer) GetResetPasswordToken(ctx context.Context, req *proto.GetRe
 }
 
 // GetPluginData loads all plugin data matching the supplied filter.
-func (g *GRPCServer) GetPluginData(ctx context.Context, filter *types.PluginDataFilter) (*proto.PluginDataSeq, error) {
+func (g *GRPCServer) GetPluginData(ctx context.Context, filter *services.PluginDataFilter) (*proto.PluginDataSeq, error) {
 	// TODO(fspmarshall): Implement rate-limiting to prevent misbehaving plugins from
 	// consuming too many server resources.
 	auth, err := g.authenticate(ctx)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
 	}
-	data, err := auth.WithRoles.GetPluginData(ctx, *filter)
+	data, err := auth.ServerWithRoles.GetPluginData(ctx, *filter)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
 	}
-	var seq []*types.PluginDataV3
+	var seq []*services.PluginDataV3
 	for _, rsc := range data {
-		d, ok := rsc.(*types.PluginDataV3)
+		d, ok := rsc.(*services.PluginDataV3)
 		if !ok {
 			err = trace.BadParameter("unexpected plugin data type %T", rsc)
 			return nil, trail.ToGRPC(err)
@@ -547,14 +548,14 @@ func (g *GRPCServer) GetPluginData(ctx context.Context, filter *types.PluginData
 }
 
 // UpdatePluginData updates a per-resource PluginData entry.
-func (g *GRPCServer) UpdatePluginData(ctx context.Context, params *types.PluginDataUpdateParams) (*empty.Empty, error) {
+func (g *GRPCServer) UpdatePluginData(ctx context.Context, params *services.PluginDataUpdateParams) (*empty.Empty, error) {
 	// TODO(fspmarshall): Implement rate-limiting to prevent misbehaving plugins from
 	// consuming too many server resources.
 	auth, err := g.authenticate(ctx)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
 	}
-	if err := auth.WithRoles.UpdatePluginData(ctx, *params); err != nil {
+	if err := auth.ServerWithRoles.UpdatePluginData(ctx, *params); err != nil {
 		return nil, trail.ToGRPC(err)
 	}
 	return &empty.Empty{}, nil
@@ -573,7 +574,7 @@ func (g *GRPCServer) Ping(ctx context.Context, req *proto.PingRequest) (*proto.P
 }
 
 // CreateUser inserts a new user entry in a backend.
-func (g *GRPCServer) CreateUser(ctx context.Context, req *types.UserV2) (*empty.Empty, error) {
+func (g *GRPCServer) CreateUser(ctx context.Context, req *services.UserV2) (*empty.Empty, error) {
 	authCtx, err := g.authenticate(ctx)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
@@ -593,7 +594,7 @@ func (g *GRPCServer) CreateUser(ctx context.Context, req *types.UserV2) (*empty.
 }
 
 // UpdateUser updates an existing user in a backend.
-func (g *GRPCServer) UpdateUser(ctx context.Context, req *types.UserV2) (*empty.Empty, error) {
+func (g *GRPCServer) UpdateUser(ctx context.Context, req *services.UserV2) (*empty.Empty, error) {
 	authCtx, err := g.authenticate(ctx)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
@@ -629,7 +630,7 @@ func (g *GRPCServer) DeleteUser(ctx context.Context, req *proto.DeleteUserReques
 }
 
 // AcquireSemaphore acquires lease with requested resources from semaphore.
-func (g *GRPCServer) AcquireSemaphore(ctx context.Context, params *types.AcquireSemaphoreRequest) (*types.SemaphoreLease, error) {
+func (g *GRPCServer) AcquireSemaphore(ctx context.Context, params *services.AcquireSemaphoreRequest) (*services.SemaphoreLease, error) {
 	auth, err := g.authenticate(ctx)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
@@ -640,7 +641,7 @@ func (g *GRPCServer) AcquireSemaphore(ctx context.Context, params *types.Acquire
 }
 
 // KeepAliveSemaphoreLease updates semaphore lease.
-func (g *GRPCServer) KeepAliveSemaphoreLease(ctx context.Context, req *types.SemaphoreLease) (*empty.Empty, error) {
+func (g *GRPCServer) KeepAliveSemaphoreLease(ctx context.Context, req *services.SemaphoreLease) (*empty.Empty, error) {
 	auth, err := g.authenticate(ctx)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
@@ -652,7 +653,7 @@ func (g *GRPCServer) KeepAliveSemaphoreLease(ctx context.Context, req *types.Sem
 }
 
 // CancelSemaphoreLease cancels semaphore lease early.
-func (g *GRPCServer) CancelSemaphoreLease(ctx context.Context, req *types.SemaphoreLease) (*empty.Empty, error) {
+func (g *GRPCServer) CancelSemaphoreLease(ctx context.Context, req *services.SemaphoreLease) (*empty.Empty, error) {
 	auth, err := g.authenticate(ctx)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
@@ -664,7 +665,7 @@ func (g *GRPCServer) CancelSemaphoreLease(ctx context.Context, req *types.Semaph
 }
 
 // GetSemaphores returns a list of all semaphores matching the supplied filter.
-func (g *GRPCServer) GetSemaphores(ctx context.Context, req *types.SemaphoreFilter) (*proto.Semaphores, error) {
+func (g *GRPCServer) GetSemaphores(ctx context.Context, req *services.SemaphoreFilter) (*proto.Semaphores, error) {
 	auth, err := g.authenticate(ctx)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
@@ -673,9 +674,9 @@ func (g *GRPCServer) GetSemaphores(ctx context.Context, req *types.SemaphoreFilt
 	if err != nil {
 		return nil, trail.ToGRPC(err)
 	}
-	ss := make([]*types.SemaphoreV3, 0, len(semaphores))
+	ss := make([]*services.SemaphoreV3, 0, len(semaphores))
 	for _, sem := range semaphores {
-		s, ok := sem.(*types.SemaphoreV3)
+		s, ok := sem.(*services.SemaphoreV3)
 		if !ok {
 			return nil, trail.ToGRPC(trace.BadParameter("unexpected semaphore type: %T", sem))
 		}
@@ -687,7 +688,7 @@ func (g *GRPCServer) GetSemaphores(ctx context.Context, req *types.SemaphoreFilt
 }
 
 // DeleteSemaphore deletes a semaphore matching the supplied filter.
-func (g *GRPCServer) DeleteSemaphore(ctx context.Context, req *types.SemaphoreFilter) (*empty.Empty, error) {
+func (g *GRPCServer) DeleteSemaphore(ctx context.Context, req *services.SemaphoreFilter) (*empty.Empty, error) {
 	auth, err := g.authenticate(ctx)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
@@ -726,7 +727,7 @@ func (g *GRPCServer) GetDatabaseServers(ctx context.Context, req *proto.GetDatab
 }
 
 // UpsertDatabaseServer registers a new database proxy server.
-func (g *GRPCServer) UpsertDatabaseServer(ctx context.Context, req *proto.UpsertDatabaseServerRequest) (*types.KeepAlive, error) {
+func (g *GRPCServer) UpsertDatabaseServer(ctx context.Context, req *proto.UpsertDatabaseServerRequest) (*services.KeepAlive, error) {
 	auth, err := g.authenticate(ctx)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
@@ -809,9 +810,9 @@ func (g *GRPCServer) GetAppServers(ctx context.Context, req *proto.GetAppServers
 		return nil, trail.ToGRPC(err)
 	}
 
-	var servers []*types.ServerV2
+	var servers []*services.ServerV2
 	for _, s := range appServers {
-		server, ok := s.(*types.ServerV2)
+		server, ok := s.(*services.ServerV2)
 		if !ok {
 			return nil, trail.ToGRPC(trace.BadParameter("unexpected type %T", s))
 		}
@@ -824,7 +825,7 @@ func (g *GRPCServer) GetAppServers(ctx context.Context, req *proto.GetAppServers
 }
 
 // UpsertAppServer adds an application server.
-func (g *GRPCServer) UpsertAppServer(ctx context.Context, req *proto.UpsertAppServerRequest) (*types.KeepAlive, error) {
+func (g *GRPCServer) UpsertAppServer(ctx context.Context, req *proto.UpsertAppServerRequest) (*services.KeepAlive, error) {
 	auth, err := g.authenticate(ctx)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
@@ -874,13 +875,13 @@ func (g *GRPCServer) GetAppSession(ctx context.Context, req *proto.GetAppSession
 		return nil, trail.ToGRPC(err)
 	}
 
-	session, err := auth.GetAppSession(ctx, types.GetAppSessionRequest{
+	session, err := auth.GetAppSession(ctx, services.GetAppSessionRequest{
 		SessionID: req.GetSessionID(),
 	})
 	if err != nil {
 		return nil, trail.ToGRPC(err)
 	}
-	sess, ok := session.(*types.WebSessionV2)
+	sess, ok := session.(*services.WebSessionV2)
 	if !ok {
 		return nil, trail.ToGRPC(trace.BadParameter("unexpected session type %T", session))
 	}
@@ -902,9 +903,9 @@ func (g *GRPCServer) GetAppSessions(ctx context.Context, _ *empty.Empty) (*proto
 		return nil, trail.ToGRPC(err)
 	}
 
-	var out []*types.WebSessionV2
+	var out []*services.WebSessionV2
 	for _, session := range sessions {
-		sess, ok := session.(*types.WebSessionV2)
+		sess, ok := session.(*services.WebSessionV2)
 		if !ok {
 			return nil, trail.ToGRPC(trace.BadParameter("unexpected type %T", session))
 		}
@@ -924,7 +925,7 @@ func (g *GRPCServer) CreateAppSession(ctx context.Context, req *proto.CreateAppS
 		return nil, trail.ToGRPC(err)
 	}
 
-	session, err := auth.CreateAppSession(ctx, types.CreateAppSessionRequest{
+	session, err := auth.CreateAppSession(ctx, services.CreateAppSessionRequest{
 		Username:      req.GetUsername(),
 		ParentSession: req.GetParentSession(),
 		PublicAddr:    req.GetPublicAddr(),
@@ -933,7 +934,7 @@ func (g *GRPCServer) CreateAppSession(ctx context.Context, req *proto.CreateAppS
 	if err != nil {
 		return nil, trail.ToGRPC(err)
 	}
-	sess, ok := session.(*types.WebSessionV2)
+	sess, ok := session.(*services.WebSessionV2)
 	if !ok {
 		return nil, trail.ToGRPC(trace.BadParameter("unexpected type %T", session))
 	}
@@ -950,7 +951,7 @@ func (g *GRPCServer) DeleteAppSession(ctx context.Context, req *proto.DeleteAppS
 		return nil, trail.ToGRPC(err)
 	}
 
-	if err := auth.DeleteAppSession(ctx, types.DeleteAppSessionRequest{
+	if err := auth.DeleteAppSession(ctx, services.DeleteAppSessionRequest{
 		SessionID: req.GetSessionID(),
 	}); err != nil {
 		return nil, trail.ToGRPC(err)
@@ -1006,7 +1007,7 @@ func (g *GRPCServer) GetWebSession(ctx context.Context, req *types.GetWebSession
 	if err != nil {
 		return nil, trail.ToGRPC(err)
 	}
-	sess, ok := session.(*types.WebSessionV2)
+	sess, ok := session.(*services.WebSessionV2)
 	if !ok {
 		return nil, trail.ToGRPC(trace.BadParameter("unexpected session type %T", session))
 	}
@@ -1028,9 +1029,9 @@ func (g *GRPCServer) GetWebSessions(ctx context.Context, _ *empty.Empty) (*proto
 		return nil, trail.ToGRPC(err)
 	}
 
-	var out []*types.WebSessionV2
+	var out []*services.WebSessionV2
 	for _, session := range sessions {
-		sess, ok := session.(*types.WebSessionV2)
+		sess, ok := session.(*services.WebSessionV2)
 		if !ok {
 			return nil, trail.ToGRPC(trace.BadParameter("unexpected type %T", session))
 		}
@@ -1146,7 +1147,7 @@ func (g *GRPCServer) DeleteAllWebTokens(ctx context.Context, _ *empty.Empty) (*e
 }
 
 // UpdateRemoteCluster updates remote cluster
-func (g *GRPCServer) UpdateRemoteCluster(ctx context.Context, req *types.RemoteClusterV3) (*empty.Empty, error) {
+func (g *GRPCServer) UpdateRemoteCluster(ctx context.Context, req *services.RemoteClusterV3) (*empty.Empty, error) {
 	auth, err := g.authenticate(ctx)
 	if err != nil {
 		return nil, trail.ToGRPC(err)
@@ -1169,9 +1170,9 @@ func (g *GRPCServer) GetKubeServices(ctx context.Context, req *proto.GetKubeServ
 		return nil, trail.ToGRPC(err)
 	}
 
-	var servers []*types.ServerV2
+	var servers []*services.ServerV2
 	for _, s := range kubeServices {
-		server, ok := s.(*types.ServerV2)
+		server, ok := s.(*services.ServerV2)
 		if !ok {
 			return nil, trail.ToGRPC(trace.BadParameter("unexpected type %T", s))
 		}
@@ -1293,7 +1294,7 @@ func addMFADeviceInit(gctx *grpcContext, stream proto.AuthService_AddMFADeviceSe
 	if initReq == nil {
 		return nil, trace.BadParameter("expected AddMFADeviceRequestInit, got %T", req)
 	}
-	devs, err := gctx.authServer.Services.GetMFADevices(stream.Context(), gctx.User.GetName())
+	devs, err := gctx.authServer.GetMFADevices(stream.Context(), gctx.User.GetName())
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -1309,7 +1310,7 @@ func addMFADeviceAuthChallenge(gctx *grpcContext, stream proto.AuthService_AddMF
 	auth := gctx.authServer
 	user := gctx.User.GetName()
 	ctx := stream.Context()
-	u2fStorage, err := u2f.InMemoryAuthenticationStorage(auth.Services.Identity)
+	u2fStorage, err := u2f.InMemoryAuthenticationStorage(auth.Identity)
 	if err != nil {
 		return trace.Wrap(err)
 	}
@@ -1346,7 +1347,7 @@ func addMFADeviceRegisterChallenge(gctx *grpcContext, stream proto.AuthService_A
 	authCtx := gctx.authServer
 	user := gctx.User.GetName()
 	ctx := stream.Context()
-	u2fStorage, err := u2f.InMemoryRegistrationStorage(authCtx.Services.Identity)
+	u2fStorage, err := u2f.InMemoryRegistrationStorage(authCtx.Identity)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -1369,7 +1370,7 @@ func addMFADeviceRegisterChallenge(gctx *grpcContext, stream proto.AuthService_A
 			Account:       otpKey.AccountName(),
 		}}
 	case proto.AddMFADeviceRequestInit_U2F:
-		cap, err := authCtx.Services.GetAuthPreference()
+		cap, err := authCtx.GetAuthPreference()
 		if err != nil {
 			return nil, trace.Wrap(err)
 		}
@@ -1424,7 +1425,7 @@ func addMFADeviceRegisterChallenge(gctx *grpcContext, stream proto.AuthService_A
 		if err := authCtx.checkTOTP(ctx, user, resp.TOTP.Code, dev); err != nil {
 			return nil, trace.Wrap(err)
 		}
-		if err := authCtx.Services.UpsertMFADevice(ctx, user, dev); err != nil {
+		if err := authCtx.UpsertMFADevice(ctx, user, dev); err != nil {
 			return nil, trace.Wrap(err)
 		}
 	case *proto.MFARegisterResponse_U2F:
@@ -1483,7 +1484,7 @@ func (g *GRPCServer) DeleteMFADevice(stream proto.AuthService_DeleteMFADeviceSer
 	}
 
 	// Find the device and delete it from backend.
-	devs, err := auth.Services.GetMFADevices(ctx, user)
+	devs, err := auth.GetMFADevices(ctx, user)
 	if err != nil {
 		return trace.Wrap(err)
 	}
@@ -1492,7 +1493,7 @@ func (g *GRPCServer) DeleteMFADevice(stream proto.AuthService_DeleteMFADeviceSer
 		if d.Metadata.Name != initReq.DeviceName && d.Id != initReq.DeviceName {
 			continue
 		}
-		if err := auth.Services.DeleteMFADevice(ctx, user, d.Id); err != nil {
+		if err := auth.DeleteMFADevice(ctx, user, d.Id); err != nil {
 			return trail.ToGRPC(err)
 		}
 		// 4. send Ack
@@ -1510,7 +1511,7 @@ func deleteMFADeviceAuthChallenge(gctx *grpcContext, stream proto.AuthService_De
 	ctx := stream.Context()
 	auth := gctx.authServer
 	user := gctx.User.GetName()
-	u2fStorage, err := u2f.InMemoryAuthenticationStorage(auth.Services.Identity)
+	u2fStorage, err := u2f.InMemoryAuthenticationStorage(auth.Identity)
 	if err != nil {
 		return trace.Wrap(err)
 	}
@@ -1546,7 +1547,7 @@ func (g *GRPCServer) GetMFADevices(ctx context.Context, req *proto.GetMFADevices
 		return nil, trace.Wrap(err)
 	}
 
-	devs, err := actx.authServer.Services.GetMFADevices(ctx, actx.User.GetName())
+	devs, err := actx.authServer.GetMFADevices(ctx, actx.User.GetName())
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -1693,7 +1694,7 @@ func userSingleUseCertsGenerate(ctx context.Context, actx *grpcContext, req prot
 
 type grpcContext struct {
 	*Context
-	*WithRoles
+	*ServerWithRoles
 }
 
 // authenticate extracts authentication context and returns initialized auth server
@@ -1715,11 +1716,11 @@ func (g *GRPCServer) authenticate(ctx context.Context) (*grpcContext, error) {
 	}
 	return &grpcContext{
 		Context: authContext,
-		WithRoles: &WithRoles{
+		ServerWithRoles: &ServerWithRoles{
 			authServer: g.AuthServer,
 			context:    *authContext,
 			sessions:   g.SessionService,
-			alog:       g.AuthServer.Services.IAuditLog,
+			alog:       g.AuthServer.IAuditLog,
 		},
 	}, nil
 }
