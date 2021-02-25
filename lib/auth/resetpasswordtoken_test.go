@@ -98,7 +98,7 @@ func (s *ResetPasswordTokenTest) TestCreateResetPasswordToken(c *check.C) {
 	c.Assert(event.(*events.ResetPasswordTokenCreate).User, check.Equals, teleport.UserSystem)
 
 	// verify that password was reset
-	err = s.a.CheckPasswordWOToken(username, []byte(pass))
+	err = s.a.checkPasswordWOToken(username, []byte(pass))
 	c.Assert(err, check.NotNil)
 
 	// create another reset token for the same user
