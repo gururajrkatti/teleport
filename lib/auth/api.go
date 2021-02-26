@@ -60,7 +60,7 @@ type Announcer interface {
 // KeepAliver creates new keep-alives
 type KeepAliver interface {
 	// NewKeepAliver returns a new instance of keep aliver
-	NewKeepAliver(ctx context.Context) (types.KeepAliver, error)
+	NewKeepAliver(ctx context.Context) (services.KeepAliver, error)
 }
 
 // ReadAccessPoint is an API interface implemented by a certificate authority (CA)

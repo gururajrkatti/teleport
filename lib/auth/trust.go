@@ -16,8 +16,6 @@ limitations under the License.
 
 package auth
 
-import "github.com/gravitational/teleport/api/types"
-
 // Trust is responsible for managing certificate authorities
 // Each authority is managing some domain, e.g. example.com
 //
@@ -29,21 +27,21 @@ import "github.com/gravitational/teleport/api/types"
 // be only used to validate
 type Trust interface {
 	// UpsertCertAuthority updates or inserts a new certificate authority
-	UpsertCertAuthority(ca types.CertAuthority) error
+	UpsertCertAuthority(ca CertAuthority) error
 
 	// CompareAndSwapCertAuthority updates the cert authority value
 	// if existing value matches existing parameter,
 	// returns nil if succeeds, trace.CompareFailed otherwise
-	CompareAndSwapCertAuthority(new, existing types.CertAuthority) error
+	CompareAndSwapCertAuthority(new, existing CertAuthority) error
 
 	// DeleteCertAuthority deletes particular certificate authority
-	DeleteCertAuthority(id types.CertAuthID) error
+	DeleteCertAuthority(id CertAuthID) error
 
 	// GetCertAuthority returns certificate authority by given id. Parameter loadSigningKeys
 	// controls if signing keys are loaded
-	GetCertAuthority(id types.CertAuthID, loadSigningKeys bool, opts ...MarshalOption) (types.CertAuthority, error)
+	GetCertAuthority(id CertAuthID, loadSigningKeys bool, opts ...MarshalOption) (CertAuthority, error)
 
 	// GetCertAuthorities returns a list of authorities of a given type
 	// loadSigningKeys controls whether signing keys should be loaded or not
-	GetCertAuthorities(caType types.CertAuthType, loadSigningKeys bool, opts ...MarshalOption) ([]types.CertAuthority, error)
+	GetCertAuthorities(caType CertAuthType, loadSigningKeys bool, opts ...MarshalOption) ([]CertAuthority, error)
 }

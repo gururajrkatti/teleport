@@ -20,9 +20,9 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/gravitational/teleport/api/types/wrappers"
-
 	"gopkg.in/check.v1"
+
+	"github.com/gravitational/teleport/api/types/wrappers"
 )
 
 type WrappersSuite struct{}

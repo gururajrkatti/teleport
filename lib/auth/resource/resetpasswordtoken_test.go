@@ -21,7 +21,6 @@ import (
 
 	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib/fixtures"
-	"github.com/gravitational/teleport/lib/services"
 
 	"gopkg.in/check.v1"
 )
@@ -37,7 +36,7 @@ func (r *ResetPasswordTokenSuite) TestUnmarshal(c *check.C) {
 	type testCase struct {
 		description string
 		input       string
-		expected    services.ResetPasswordToken
+		expected    types.ResetPasswordToken
 	}
 
 	testCases := []testCase{

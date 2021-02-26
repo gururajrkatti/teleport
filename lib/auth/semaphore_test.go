@@ -19,8 +19,6 @@ package auth
 import (
 	"time"
 
-	"github.com/gravitational/teleport/api/types"
-
 	"gopkg.in/check.v1"
 )
 
@@ -29,7 +27,7 @@ type SemaphoreSuite struct{}
 var _ = check.Suite(&SemaphoreSuite{})
 
 func (s *SemaphoreSuite) TestAcquireSemaphoreRequest(c *check.C) {
-	ok := types.AcquireSemaphoreRequest{
+	ok := AcquireSemaphoreRequest{
 		SemaphoreKind: "foo",
 		SemaphoreName: "bar",
 		MaxLeases:     1,

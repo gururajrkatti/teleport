@@ -27,7 +27,6 @@ import (
 	"github.com/gravitational/teleport/lib/backend/lite"
 	"github.com/gravitational/teleport/lib/events"
 	"github.com/gravitational/teleport/lib/services"
-
 	"github.com/gravitational/trace"
 
 	"github.com/jonboulle/clockwork"

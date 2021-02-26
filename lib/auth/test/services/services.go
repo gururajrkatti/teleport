@@ -263,82 +263,6 @@ func (a *AuthServer) Close() error {
 	)
 }
 
-// NewRemoteClient creates new client to the remote server using identity
-// generated for this certificate authority
-func (a *AuthServer) NewRemoteClient(identity Identity, addr net.Addr, pool *x509.CertPool) (*client.Client, error) {
-	tlsConfig := utils.TLSConfig(a.CipherSuites)
-	cert, err := a.NewCertificate(identity)
-	if err != nil {
-		return nil, trace.Wrap(err)
-	}
-	tlsConfig.Certificates = []tls.Certificate{*cert}
-	tlsConfig.RootCAs = pool
-	tlsConfig.ServerName = auth.EncodeClusterName(a.ClusterName)
-	tlsConfig.Time = a.AuthServer.GetClock().Now
-
-	return client.New(apiclient.Config{
-		Addrs: []string{addr.String()},
-		Credentials: []apiclient.Credentials{
-			apiclient.LoadTLS(tlsConfig),
-		},
-	})
-}
-
-// NewClientFromWebSession returns new authenticated client from web session
-func (t *TLSServer) NewClientFromWebSession(sess types.WebSession) (*client.Client, error) {
-	tlsConfig, err := t.Identity.TLSConfig(t.AuthServer.CipherSuites)
-	if err != nil {
-		return nil, trace.Wrap(err)
-	}
-	tlsCert, err := tls.X509KeyPair(sess.GetTLSCert(), sess.GetPriv())
-	if err != nil {
-		return nil, trace.Wrap(err, "failed to parse TLS cert and key")
-	}
-	tlsConfig.Certificates = []tls.Certificate{tlsCert}
-	tlsConfig.Time = t.AuthServer.AuthServer.GetClock().Now
-
-	return client.New(apiclient.Config{
-		Addrs: []string{t.Addr().String()},
-		Credentials: []apiclient.Credentials{
-			apiclient.LoadTLS(tlsConfig),
-		},
-	})
-}
-
-// CloneClient uses the same credentials as the passed client
-// but forces the client to be recreated
-func (t *TLSServer) CloneClient(clt *client.Client) *client.Client {
-	newClient, err := client.New(apiclient.Config{
-		Addrs: []string{t.Addr().String()},
-		Credentials: []apiclient.Credentials{
-			apiclient.LoadTLS(clt.Config()),
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-	return newClient
-}
-
-// NewClient returns new client to test server authenticated with identity
-func (t *TLSServer) NewClient(identity Identity) (*client.Client, error) {
-	tlsConfig, err := t.ClientTLSConfig(identity)
-	if err != nil {
-		return nil, trace.Wrap(err)
-	}
-
-	newClient, err := client.New(apiclient.Config{
-		Addrs: []string{t.Addr().String()},
-		Credentials: []apiclient.Credentials{
-			apiclient.LoadTLS(tlsConfig),
-		},
-	})
-	if err != nil {
-		return nil, trace.Wrap(err)
-	}
-	return newClient, nil
-}
-
 // GenerateUserCert takes the public key in the OpenSSH `authorized_keys`
 // plain text format, signs it using User Certificate Authority signing key and returns the
 // resulting certificate.
@@ -458,6 +382,27 @@ func (a *AuthServer) NewTLSServer() (*TLSServer, error) {
 	return srv, nil
 }
 
+// NewRemoteClient creates new client to the remote server using identity
+// generated for this certificate authority
+func (a *AuthServer) NewRemoteClient(identity Identity, addr net.Addr, pool *x509.CertPool) (*client.Client, error) {
+	tlsConfig := utils.TLSConfig(a.CipherSuites)
+	cert, err := a.NewCertificate(identity)
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+	tlsConfig.Certificates = []tls.Certificate{*cert}
+	tlsConfig.RootCAs = pool
+	tlsConfig.ServerName = auth.EncodeClusterName(a.ClusterName)
+	tlsConfig.Time = a.AuthServer.GetClock().Now
+
+	return client.New(apiclient.Config{
+		Addrs: []string{addr.String()},
+		Credentials: []apiclient.Credentials{
+			apiclient.LoadTLS(tlsConfig),
+		},
+	})
+}
+
 // TLSServerConfig is a configuration for test TLS server
 type TLSServerConfig struct {
 	// APIConfig is a configuration of API server
@@ -563,81 +508,6 @@ func NewTLSServer(cfg TLSServerConfig) (*TLSServer, error) {
 	return srv, nil
 }
 
-// CertPool returns cert pool that auth server represents
-func (t *TLSServer) CertPool() (*x509.CertPool, error) {
-	tlsConfig, err := t.Identity.TLSConfig(t.AuthServer.CipherSuites)
-	if err != nil {
-		return nil, trace.Wrap(err)
-	}
-	return tlsConfig.RootCAs, nil
-}
-
-// ClientTLSConfig returns client TLS config based on the identity
-func (t *TLSServer) ClientTLSConfig(identity Identity) (*tls.Config, error) {
-	tlsConfig, err := t.Identity.TLSConfig(t.AuthServer.CipherSuites)
-	if err != nil {
-		return nil, trace.Wrap(err)
-	}
-	if identity.I != nil {
-		cert, err := t.AuthServer.NewCertificate(identity)
-		if err != nil {
-			return nil, trace.Wrap(err)
-		}
-		tlsConfig.Certificates = []tls.Certificate{*cert}
-	} else {
-		// this client is not authenticated, which means that auth
-		// server should apply Nop builtin role
-		tlsConfig.Certificates = nil
-	}
-	tlsConfig.Time = t.AuthServer.AuthServer.GetClock().Now
-	return tlsConfig, nil
-}
-
-// Addr returns address of TLS server
-func (t *TLSServer) Addr() net.Addr {
-	return t.Listener.Addr()
-}
-
-// Start starts TLS server on loopback address on the first lisenting socket
-func (t *TLSServer) Start() error {
-	go t.TLSServer.Serve()
-	return nil
-}
-
-// Close closes the listener and HTTP server
-func (t *TLSServer) Close() error {
-	err := t.TLSServer.Close()
-	if t.Listener != nil {
-		t.Listener.Close()
-	}
-	if t.AuthServer.Backend != nil {
-		t.AuthServer.Backend.Close()
-	}
-	return err
-}
-
-// Stop stops listening server, but does not close the auth backend
-func (t *TLSServer) Stop() error {
-	err := t.TLSServer.Close()
-	if t.Listener != nil {
-		t.Listener.Close()
-	}
-	return err
-}
-
-// NewServerIdentity generates new server identity, used in tests
-func NewServerIdentity(clt *server.Server, hostID string, role teleport.Role) (*server.Identity, error) {
-	keys, err := clt.GenerateServerKeys(server.GenerateServerKeysRequest{
-		HostID:   hostID,
-		NodeName: hostID,
-		Roles:    teleport.Roles{teleport.RoleAuth},
-	})
-	if err != nil {
-		return nil, trace.Wrap(err)
-	}
-	return server.ReadIdentityFromKeyPair(keys)
-}
-
 // Identity is test identity spec used to generate identities in tests
 type Identity struct {
 	I              interface{}
@@ -685,4 +555,134 @@ func ServerID(role teleport.Role, serverID string) Identity {
 			Username: serverID,
 		},
 	}
+}
+
+// NewClientFromWebSession returns new authenticated client from web session
+func (t *TLSServer) NewClientFromWebSession(sess types.WebSession) (*client.Client, error) {
+	tlsConfig, err := t.Identity.TLSConfig(t.AuthServer.CipherSuites)
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+	tlsCert, err := tls.X509KeyPair(sess.GetTLSCert(), sess.GetPriv())
+	if err != nil {
+		return nil, trace.Wrap(err, "failed to parse TLS cert and key")
+	}
+	tlsConfig.Certificates = []tls.Certificate{tlsCert}
+	tlsConfig.Time = t.AuthServer.AuthServer.GetClock().Now
+
+	return client.New(apiclient.Config{
+		Addrs: []string{t.Addr().String()},
+		Credentials: []apiclient.Credentials{
+			apiclient.LoadTLS(tlsConfig),
+		},
+	})
+}
+
+// CertPool returns cert pool that auth server represents
+func (t *TLSServer) CertPool() (*x509.CertPool, error) {
+	tlsConfig, err := t.Identity.TLSConfig(t.AuthServer.CipherSuites)
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+	return tlsConfig.RootCAs, nil
+}
+
+// ClientTLSConfig returns client TLS config based on the identity
+func (t *TLSServer) ClientTLSConfig(identity Identity) (*tls.Config, error) {
+	tlsConfig, err := t.Identity.TLSConfig(t.AuthServer.CipherSuites)
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+	if identity.I != nil {
+		cert, err := t.AuthServer.NewCertificate(identity)
+		if err != nil {
+			return nil, trace.Wrap(err)
+		}
+		tlsConfig.Certificates = []tls.Certificate{*cert}
+	} else {
+		// this client is not authenticated, which means that auth
+		// server should apply Nop builtin role
+		tlsConfig.Certificates = nil
+	}
+	tlsConfig.Time = t.AuthServer.AuthServer.GetClock().Now
+	return tlsConfig, nil
+}
+
+// CloneClient uses the same credentials as the passed client
+// but forces the client to be recreated
+func (t *TLSServer) CloneClient(clt *client.Client) *client.Client {
+	newClient, err := client.New(apiclient.Config{
+		Addrs: []string{t.Addr().String()},
+		Credentials: []apiclient.Credentials{
+			apiclient.LoadTLS(clt.Config()),
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	return newClient
+}
+
+// NewClient returns new client to test server authenticated with identity
+func (t *TLSServer) NewClient(identity Identity) (*client.Client, error) {
+	tlsConfig, err := t.ClientTLSConfig(identity)
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+
+	newClient, err := client.New(apiclient.Config{
+		Addrs: []string{t.Addr().String()},
+		Credentials: []apiclient.Credentials{
+			apiclient.LoadTLS(tlsConfig),
+		},
+	})
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+	return newClient, nil
+}
+
+// Addr returns address of TLS server
+func (t *TLSServer) Addr() net.Addr {
+	return t.Listener.Addr()
+}
+
+// Start starts TLS server on loopback address on the first lisenting socket
+func (t *TLSServer) Start() error {
+	go t.TLSServer.Serve()
+	return nil
+}
+
+// Close closes the listener and HTTP server
+func (t *TLSServer) Close() error {
+	err := t.TLSServer.Close()
+	if t.Listener != nil {
+		t.Listener.Close()
+	}
+	if t.AuthServer.Backend != nil {
+		t.AuthServer.Backend.Close()
+	}
+	return err
+}
+
+// Stop stops listening server, but does not close the auth backend
+func (t *TLSServer) Stop() error {
+	err := t.TLSServer.Close()
+	if t.Listener != nil {
+		t.Listener.Close()
+	}
+	return err
+}
+
+// NewServerIdentity generates new server identity, used in tests
+func NewServerIdentity(clt *server.Server, hostID string, role teleport.Role) (*server.Identity, error) {
+	keys, err := clt.GenerateServerKeys(server.GenerateServerKeysRequest{
+		HostID:   hostID,
+		NodeName: hostID,
+		Roles:    teleport.Roles{teleport.RoleAuth},
+	})
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+	return server.ReadIdentityFromKeyPair(keys)
 }

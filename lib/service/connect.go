@@ -27,7 +27,7 @@ import (
 	"github.com/gravitational/teleport"
 	apiclient "github.com/gravitational/teleport/api/client"
 	"github.com/gravitational/teleport/lib"
-	authclient "github.com/gravitational/teleport/lib/auth/client"
+	auth "github.com/gravitational/teleport/lib/auth/client"
 	"github.com/gravitational/teleport/lib/auth/server"
 	"github.com/gravitational/teleport/lib/backend"
 	"github.com/gravitational/teleport/lib/client"
@@ -306,7 +306,7 @@ func (process *TeleportProcess) reRegister(conn *Connector, additionalPrincipals
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	identity, err := authclient.ReRegister(authclient.ReRegisterParams{
+	identity, err := auth.ReRegister(auth.ReRegisterParams{
 		Client:               conn.Client,
 		ID:                   conn.ClientIdentity.ID,
 		AdditionalPrincipals: additionalPrincipals,
@@ -338,7 +338,7 @@ func (process *TeleportProcess) firstTimeConnect(role teleport.Role) (*Connector
 		// Auth service is on the same host, no need to go though the invitation
 		// procedure.
 		process.log.Debugf("This server has local Auth server started, using it to add role to the cluster.")
-		identity, err = authclient.LocalRegister(id, process.getLocalAuth(), additionalPrincipals, dnsNames, process.Config.AdvertiseIP)
+		identity, err = auth.LocalRegister(id, process.getLocalAuth(), additionalPrincipals, dnsNames, process.Config.AdvertiseIP)
 		if err != nil {
 			return nil, trace.Wrap(err)
 		}
@@ -354,7 +354,7 @@ func (process *TeleportProcess) firstTimeConnect(role teleport.Role) (*Connector
 			return nil, trace.Wrap(err)
 		}
 
-		identity, err = authclient.Register(authclient.RegisterParams{
+		identity, err = auth.Register(auth.RegisterParams{
 			DataDir:              process.Config.DataDir,
 			Token:                process.Config.Token,
 			ID:                   id,
@@ -784,7 +784,7 @@ func (process *TeleportProcess) rotate(conn *Connector, localState server.StateV
 
 // newClient attempts to connect directly to the Auth Server. If it fails, it
 // falls back to trying to connect to the Auth Server through the proxy.
-func (process *TeleportProcess) newClient(authServers []utils.NetAddr, identity *server.Identity) (*authclient.Client, error) {
+func (process *TeleportProcess) newClient(authServers []utils.NetAddr, identity *server.Identity) (*auth.Client, error) {
 	directClient, err := process.newClientDirect(authServers, identity)
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -873,7 +873,7 @@ func tunnelAddr(settings client.ProxySettings) (string, error) {
 	return settings.SSH.TunnelListenAddr, nil
 }
 
-func (process *TeleportProcess) newClientThroughTunnel(servers []utils.NetAddr, identity *server.Identity) (*authclient.Client, error) {
+func (process *TeleportProcess) newClientThroughTunnel(servers []utils.NetAddr, identity *server.Identity) (*auth.Client, error) {
 	// Discover address of SSH reverse tunnel server.
 	proxyAddr, err := process.findReverseTunnel(servers)
 	if err != nil {
@@ -886,7 +886,7 @@ func (process *TeleportProcess) newClientThroughTunnel(servers []utils.NetAddr, 
 		return nil, trace.Wrap(err)
 	}
 
-	clt, err := authclient.New(apiclient.Config{
+	clt, err := auth.New(apiclient.Config{
 		Dialer: &reversetunnel.TunnelAuthDialer{
 			ProxyAddr:    proxyAddr,
 			ClientConfig: identity.SSHClientConfig(),
@@ -909,20 +909,20 @@ func (process *TeleportProcess) newClientThroughTunnel(servers []utils.NetAddr, 
 	return clt, nil
 }
 
-func (process *TeleportProcess) newClientDirect(authServers []utils.NetAddr, identity *server.Identity) (*authclient.Client, error) {
+func (process *TeleportProcess) newClientDirect(authServers []utils.NetAddr, identity *server.Identity) (*auth.Client, error) {
 	tlsConfig, err := identity.TLSConfig(process.Config.CipherSuites)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
 	if process.Config.ClientTimeout != 0 {
-		return authclient.New(apiclient.Config{
+		return auth.New(apiclient.Config{
 			Addrs: utils.NetAddrsToStrings(authServers),
 			Credentials: []apiclient.Credentials{
 				apiclient.LoadTLS(tlsConfig),
 			},
-		}, authclient.Timeout(process.Config.ClientTimeout))
+		}, auth.Timeout(process.Config.ClientTimeout))
 	}
-	return authclient.New(apiclient.Config{
+	return auth.New(apiclient.Config{
 		Addrs: utils.NetAddrsToStrings(authServers),
 		Credentials: []apiclient.Credentials{
 			apiclient.LoadTLS(tlsConfig),

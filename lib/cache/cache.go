@@ -32,7 +32,6 @@ import (
 	"github.com/gravitational/teleport/lib/utils"
 
 	"github.com/gravitational/trace"
-
 	"github.com/jonboulle/clockwork"
 	log "github.com/sirupsen/logrus"
 	"go.uber.org/atomic"

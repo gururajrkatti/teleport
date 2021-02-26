@@ -20,13 +20,13 @@ package test
 import (
 	"time"
 
-	"golang.org/x/crypto/ssh"
-
 	"github.com/gravitational/teleport"
 	"github.com/gravitational/teleport/lib/auth"
 	"github.com/gravitational/teleport/lib/auth/resource"
 	"github.com/gravitational/teleport/lib/defaults"
 	"github.com/gravitational/teleport/lib/sshca"
+
+	"golang.org/x/crypto/ssh"
 
 	"github.com/jonboulle/clockwork"
 	"gopkg.in/check.v1"

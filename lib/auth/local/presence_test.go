@@ -21,6 +21,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jonboulle/clockwork"
+	"github.com/pborman/uuid"
+	"github.com/stretchr/testify/require"
+	"gopkg.in/check.v1"
+
 	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib/backend"
 	"github.com/gravitational/teleport/lib/backend/lite"
@@ -28,11 +33,6 @@ import (
 	"github.com/gravitational/teleport/lib/services"
 
 	"github.com/gravitational/trace"
-
-	"github.com/jonboulle/clockwork"
-	"github.com/pborman/uuid"
-	"github.com/stretchr/testify/require"
-	"gopkg.in/check.v1"
 )
 
 type PresenceSuite struct {

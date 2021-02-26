@@ -2091,7 +2091,7 @@ type clientCluster interface {
 // of adding new nodes, auth servers and proxies to the cluster
 type clientProvisioning interface {
 	// GetTokens returns a list of active invitation tokens for nodes and users
-	GetTokens(opts ...auth.MarshalOption) (tokens []types.ProvisionToken, err error)
+	GetTokens(opts ...auth.MarshalOption) (tokens []services.ProvisionToken, err error)
 
 	// GetToken returns provisioning token
 	GetToken(token string) (types.ProvisionToken, error)
@@ -2101,7 +2101,7 @@ type clientProvisioning interface {
 	DeleteToken(token string) error
 
 	// UpsertToken adds provisioning tokens for the auth server
-	UpsertToken(types.ProvisionToken) error
+	UpsertToken(services.ProvisionToken) error
 
 	// RegisterUsingToken calls the auth service API to register a new node via registration token
 	// which has been previously issued via GenerateToken
@@ -2243,14 +2243,14 @@ type clientIdentity interface {
 	// RotateExternalCertAuthority rotates external certificate authority,
 	// this method is used to update only public keys and certificates of the
 	// the certificate authorities of trusted clusters.
-	RotateExternalCertAuthority(types.CertAuthority) error
+	RotateExternalCertAuthority(services.CertAuthority) error
 
 	// GenerateServerKeys generates new host private keys and certificates (signed
 	// by the host certificate authority) for a node
 	GenerateServerKeys(server.GenerateServerKeysRequest) (*server.PackedKeys, error)
 
 	// NewKeepAliver returns a new instance of keep aliver
-	NewKeepAliver(ctx context.Context) (types.KeepAliver, error)
+	NewKeepAliver(ctx context.Context) (services.KeepAliver, error)
 
 	// GetMFADevices fetches all MFA devices registered for the calling user.
 	GetMFADevices(ctx context.Context, in *proto.GetMFADevicesRequest) (*proto.GetMFADevicesResponse, error)

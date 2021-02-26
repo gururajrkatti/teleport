@@ -451,7 +451,7 @@ type certs struct {
 
 type certRequest struct {
 	// user is a user to generate certificate for
-	user types.User
+	user services.User
 	// checker is used to perform RBAC checks.
 	checker auth.AccessChecker
 	// ttl is Duration of the certificate

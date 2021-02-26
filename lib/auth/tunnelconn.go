@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/gravitational/teleport"
-	"github.com/gravitational/teleport/api/types"
 
 	"github.com/gravitational/trace"
 	"github.com/jonboulle/clockwork"
@@ -28,8 +27,8 @@ import (
 
 // LatestTunnelConnection returns latest tunnel connection from the list
 // of tunnel connections, if no connections found, returns NotFound error
-func LatestTunnelConnection(conns []types.TunnelConnection) (types.TunnelConnection, error) {
-	var lastConn types.TunnelConnection
+func LatestTunnelConnection(conns []TunnelConnection) (TunnelConnection, error) {
+	var lastConn TunnelConnection
 	for i := range conns {
 		conn := conns[i]
 		if lastConn == nil || conn.GetLastHeartbeat().After(lastConn.GetLastHeartbeat()) {
@@ -44,7 +43,7 @@ func LatestTunnelConnection(conns []types.TunnelConnection) (types.TunnelConnect
 
 // TunnelConnectionStatus returns tunnel connection status based on the last
 // heartbeat time recorded for a connection
-func TunnelConnectionStatus(clock clockwork.Clock, conn types.TunnelConnection, offlineThreshold time.Duration) string {
+func TunnelConnectionStatus(clock clockwork.Clock, conn TunnelConnection, offlineThreshold time.Duration) string {
 	diff := clock.Now().Sub(conn.GetLastHeartbeat())
 	if diff < offlineThreshold {
 		return teleport.RemoteClusterStatusOnline

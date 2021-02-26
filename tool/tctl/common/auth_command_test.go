@@ -18,7 +18,6 @@ import (
 	"github.com/gravitational/teleport/lib/service"
 	"github.com/gravitational/teleport/lib/services"
 	"github.com/gravitational/teleport/lib/utils"
-
 	"github.com/stretchr/testify/require"
 )
 

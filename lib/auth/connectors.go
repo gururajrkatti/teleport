@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/gravitational/teleport"
-	"github.com/gravitational/teleport/api/types"
 	"github.com/gravitational/teleport/lib/utils"
 
 	"github.com/gravitational/trace"
@@ -34,7 +33,7 @@ import (
 )
 
 // ValidateOIDCConnector validates the OIDC connector and sets default values
-func ValidateOIDCConnector(oc types.OIDCConnector) error {
+func ValidateOIDCConnector(oc OIDCConnector) error {
 	if err := oc.CheckAndSetDefaults(); err != nil {
 		return trace.Wrap(err)
 	}
@@ -60,7 +59,7 @@ func ValidateOIDCConnector(oc types.OIDCConnector) error {
 }
 
 // ValidateSAMLConnector validates the SAMLConnector and sets default values
-func ValidateSAMLConnector(sc types.SAMLConnector) error {
+func ValidateSAMLConnector(sc SAMLConnector) error {
 	if err := sc.CheckAndSetDefaults(); err != nil {
 		return trace.Wrap(err)
 	}
@@ -109,7 +108,7 @@ func ValidateSAMLConnector(sc types.SAMLConnector) error {
 		if err != nil {
 			return trace.Wrap(err)
 		}
-		sc.SetSigningKeyPair(&types.SigningKeyPair{
+		sc.SetSigningKeyPair(&SigningKeyPair{
 			PrivateKey: string(keyPEM),
 			Cert:       string(certPEM),
 		})

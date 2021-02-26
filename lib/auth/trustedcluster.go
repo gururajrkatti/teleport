@@ -17,13 +17,11 @@ limitations under the License.
 package auth
 
 import (
-	"github.com/gravitational/teleport/api/types"
-
 	"github.com/gravitational/trace"
 )
 
 // ValidateTrustedCluster checks and sets Trusted Cluster defaults
-func ValidateTrustedCluster(tc types.TrustedCluster, allowEmptyRolesOpts ...bool) error {
+func ValidateTrustedCluster(tc TrustedCluster, allowEmptyRolesOpts ...bool) error {
 	if err := tc.CheckAndSetDefaults(); err != nil {
 		return trace.Wrap(err)
 	}

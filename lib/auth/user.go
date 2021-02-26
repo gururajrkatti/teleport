@@ -20,13 +20,11 @@ import (
 	"bytes"
 	"time"
 
-	"github.com/gravitational/teleport/api/types"
-
 	"github.com/gravitational/trace"
 )
 
 // ValidateUser validates the User and sets default values
-func ValidateUser(u types.User) error {
+func ValidateUser(u User) error {
 	if err := u.CheckAndSetDefaults(); err != nil {
 		return trace.Wrap(err)
 	}
@@ -39,7 +37,7 @@ func ValidateUser(u types.User) error {
 }
 
 // UsersEquals checks if the users are equal
-func UsersEquals(u, other types.User) bool {
+func UsersEquals(u, other User) bool {
 	if u.GetName() != other.GetName() {
 		return false
 	}
@@ -74,7 +72,7 @@ func UsersEquals(u, other types.User) bool {
 }
 
 // LocalAuthSecretsEquals checks equality (nil safe).
-func LocalAuthSecretsEquals(l *types.LocalAuthSecrets, other *types.LocalAuthSecrets) bool {
+func LocalAuthSecretsEquals(l *LocalAuthSecrets, other *LocalAuthSecrets) bool {
 	if (l == nil) || (other == nil) {
 		return l == other
 	}
@@ -84,11 +82,11 @@ func LocalAuthSecretsEquals(l *types.LocalAuthSecrets, other *types.LocalAuthSec
 	if len(l.MFA) != len(other.MFA) {
 		return false
 	}
-	mfa := make(map[string]*types.MFADevice, len(l.MFA))
+	mfa := make(map[string]*MFADevice, len(l.MFA))
 	for i, d := range l.MFA {
 		mfa[d.Id] = l.MFA[i]
 	}
-	mfaOther := make(map[string]*types.MFADevice, len(other.MFA))
+	mfaOther := make(map[string]*MFADevice, len(other.MFA))
 	for i, d := range other.MFA {
 		mfaOther[d.Id] = other.MFA[i]
 	}

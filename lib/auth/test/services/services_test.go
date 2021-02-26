@@ -57,11 +57,11 @@ import (
 	"github.com/gravitational/teleport/lib/tlsca"
 	"github.com/gravitational/teleport/lib/utils"
 
-	"github.com/gravitational/trace"
-
 	"github.com/jonboulle/clockwork"
 	"github.com/pquerna/otp/totp"
 	"gopkg.in/check.v1"
+
+	"github.com/gravitational/trace"
 )
 
 // Hook the package into gocheck pipeline
@@ -886,16 +886,6 @@ func (s *TLSSuite) TestReadOwnRole(c *check.C) {
 	fixtures.ExpectAccessDenied(c, err)
 }
 
-func (s *TLSSuite) TestClusterConfig(c *check.C) {
-	clt, err := s.server.NewClient(Admin())
-	c.Assert(err, check.IsNil)
-
-	suite := &suite.ServicesTestSuite{
-		ConfigS: clt,
-	}
-	suite.ClusterConfig(c)
-}
-
 func (s *TLSSuite) TestAuthPreference(c *check.C) {
 	clt, err := s.server.NewClient(Admin())
 	c.Assert(err, check.IsNil)
@@ -904,6 +894,16 @@ func (s *TLSSuite) TestAuthPreference(c *check.C) {
 		ConfigS: clt,
 	}
 	suite.AuthPreference(c)
+}
+
+func (s *TLSSuite) TestClusterConfig(c *check.C) {
+	clt, err := s.server.NewClient(Admin())
+	c.Assert(err, check.IsNil)
+
+	suite := &suite.ServicesTestSuite{
+		ConfigS: clt,
+	}
+	suite.ClusterConfig(c)
 }
 
 func (s *TLSSuite) TestTunnelConnectionsCRUD(c *check.C) {
@@ -2869,8 +2869,8 @@ func (s *TLSSuite) TestEventsClusterConfig(c *check.C) {
 	err = s.server.Auth().RotateCertAuthority(server.RotateRequest{
 		Type:        services.HostCA,
 		GracePeriod: &gracePeriod,
-		TargetPhase: types.RotationPhaseInit,
-		Mode:        types.RotationModeManual,
+		TargetPhase: services.RotationPhaseInit,
+		Mode:        services.RotationModeManual,
 	})
 	c.Assert(err, check.IsNil)
 
