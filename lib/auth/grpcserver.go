@@ -1,5 +1,5 @@
 /*
-Copyright 2018-2020 Gravitational, Inc.
+Copyright 2018-2021 Gravitational, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -1794,13 +1794,6 @@ func NewGRPCServer(cfg GRPCServerConfig) (*GRPCServer, error) {
 		server: server,
 	}
 	proto.RegisterAuthServiceServer(authGRPCServer.server, authGRPCServer)
-
-	if plugin := GetPlugin(); plugin != nil {
-		err := plugin.RegisterGRPCService(authGRPCServer)
-		if err != nil {
-			return nil, trace.Wrap(err)
-		}
-	}
 
 	return authGRPCServer, nil
 }
